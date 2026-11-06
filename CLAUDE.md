@@ -117,7 +117,7 @@ mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2는
 
 - 핵심 목표(단계 3): **5km 순환 코스가 실제 API로 지도에 ±10%로 표시**. 코스 생성(#5, #13)은 일정이 밀려도 빼지 않아요
 - 일정이 밀리면 줄이는 순서: 안전 조언(#11) → 추천 이유(#6의 이유 부분, 개요로 대체)
-- 진행: #1 코드 완료(`setting#1-jongwon`). Vercel 배포·Android 확인·`BACKEND_DOMAIN`은 남음
+- 진행: #1 완료(`setting#1-jongwon`). Vercel 프로젝트 `runtrip_fe`(Vite 프리셋, `VITE_USE_MOCK=true`) 미리보기 배포를 Android Chrome에서 확인. 정식 주소는 develop → main 머지 후. `BACKEND_DOMAIN`은 EC2 도메인 확정 후 BE 연동(#13)에서 교체
 
 ## 깃 규칙 (팀 노션 "깃 규칙 정리")
 
