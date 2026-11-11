@@ -12,6 +12,7 @@ export const PATHS = {
   savedCourses: '/courses', // C-02
   courseDetail: '/courses/:courseId', // C-03
   my: '/my', // P-01
+  devMapCheck: '/dev/map-check', // #2 실기기 검증용 (화면 목록 밖, 링크 없음)
 } as const
 
 export const toCourseResult = (courseId: number) => `/course/result/${courseId}`
