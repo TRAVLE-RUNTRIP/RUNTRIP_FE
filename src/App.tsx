@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
 import { LoginPage, SplashPage } from './pages/auth'
+import { MapCheckPage } from './pages/dev'
 import { CourseGeneratingPage, CourseNewPage, CourseResultPage, HomePage } from './pages/course'
 import { RunCompletePage, RunCountdownPage, RunPage } from './pages/run'
 import { CourseDetailPage, MyPage, SavedCoursesPage } from './pages/saved'
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
       { path: PATHS.savedCourses, element: <SavedCoursesPage /> },
       { path: PATHS.courseDetail, element: <CourseDetailPage /> },
       { path: PATHS.my, element: <MyPage /> },
+      { path: PATHS.devMapCheck, element: <MapCheckPage /> },
       { path: '*', element: <Navigate to={PATHS.home} replace /> },
     ],
   },
