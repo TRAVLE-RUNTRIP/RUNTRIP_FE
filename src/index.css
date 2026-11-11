@@ -217,3 +217,45 @@ button:disabled {
   font-size: 13px;
   list-style: none;
 }
+
+/* S-01 스플래시, S-02 로그인 (#3) */
+.splash {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.splash-logo {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 800;
+}
+
+.splash-tagline {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.login {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-logo {
+  margin: 0 0 32px;
+  color: var(--color-primary);
+  font-size: 32px;
+  font-weight: 800;
+  text-align: center;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
