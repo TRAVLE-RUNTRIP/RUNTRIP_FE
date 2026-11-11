@@ -118,6 +118,14 @@ mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2는
 - 핵심 목표(단계 3): **5km 순환 코스가 실제 API로 지도에 ±10%로 표시**. 코스 생성(#5, #13)은 일정이 밀려도 빼지 않아요
 - 일정이 밀리면 줄이는 순서: 안전 조언(#11) → 추천 이유(#6의 이유 부분, 개요로 대체)
 - 진행: #1 완료(`setting#1-jongwon`). Vercel 프로젝트 `runtrip_fe`(Vite 프리셋, `VITE_USE_MOCK=true`) 미리보기 배포를 Android Chrome에서 확인. 정식 주소는 develop → main 머지 후. `BACKEND_DOMAIN`은 EC2 도메인 확정 후 BE 연동(#13)에서 교체
+- 진행: #2 완료(`feat#2-jongwon`). Android 10 / Chrome 150에서 T map 지도·경로선·마커·현재 위치, GPS(평균 정확도 약 11m, 약 1초 갱신), Wake Lock(앱 전환 후 복귀 시 재획득) 확인. 검증 화면 `/dev/map-check`. T map 앱 키는 Vercel 환경 변수 `VITE_TMAP_APP_KEY`(Production·Preview), 허용 IP 제한 없음
+
+## 러닝 측정 기준 후보 (#2 실측, #7에서 적용)
+
+- SDK·훅: `src/map/tmap.ts`(`loadTmap()`, 공식 로더의 document.write를 가로채서 불러옴), `src/lib/useGeoWatch.ts`, `src/lib/useWakeLock.ts`, `src/lib/geo.ts`(`distanceM`)
+- 정확도 20m 초과 위치는 거리 계산에서 제외. 측정 시작 직후에 많이 나오므로 카운트다운(M-20)에서 정확도 20m 이내가 될 때까지 대기
+- 직전 위치 대비 8.5m/s(약 2분/km) 초과로 튄 위치는 제외
+- 화면 끔·앱 전환 중에는 위치가 들어오지 않음(실측 91초 공백). 공백은 직선으로 잇지 않고 구간을 나누고, 복귀 시 Wake Lock 재요청
 
 ## 깃 규칙 (팀 노션 "깃 규칙 정리")
 
