@@ -11,8 +11,34 @@ interface MockResponse {
 const LATENCY_MS = 300
 const COURSE_LATENCY_MS = 1500 // 생성 중 화면(M-11)을 볼 수 있게 조금 길게
 
+// 세션 쿠키(24시간)처럼 새로고침해도 로그인이 남도록 만료 시각만 기기에 저장해요.
+// 코스·기록 같은 나머지 mock 데이터는 메모리에만 있어서 새로고침하면 처음으로 돌아가요.
+const SESSION_KEY = 'runtrip:mock-session-expires'
+const SESSION_MS = 24 * 60 * 60 * 1000
+
+let memoryExpires = 0 // 저장소를 못 쓰는 환경에서는 새로고침 전까지만 유지돼요.
+
+const mockSession = {
+  isValid(): boolean {
+    let stored = 0
+    try {
+      stored = Number(localStorage.getItem(SESSION_KEY))
+    } catch {
+      // 저장소를 못 쓰면 메모리 값만 봐요.
+    }
+    return Math.max(stored, memoryExpires) > Date.now()
+  },
+  start() {
+    memoryExpires = Date.now() + SESSION_MS
+    try {
+      localStorage.setItem(SESSION_KEY, String(memoryExpires))
+    } catch {
+      // 위 memoryExpires로 대신해요.
+    }
+  },
+}
+
 const state = {
-  loggedIn: false,
   nextCourseId: 101,
   courses: new Map<number, Course>(),
   reasonPolls: new Map<number, number>(),
@@ -44,11 +70,11 @@ export async function mockRequest(method: string, url: string, body: unknown): P
     if (email !== MOCK_USER.email || password !== MOCK_PASSWORD) {
       return fail(401, 'INVALID_CREDENTIALS', '이메일 또는 비밀번호를 확인해 주세요')
     }
-    state.loggedIn = true
+    mockSession.start()
     return ok(MOCK_USER)
   }
 
-  if (!state.loggedIn) return unauthenticated()
+  if (!mockSession.isValid()) return unauthenticated()
 
   // 2. 프로필
   if (method === 'GET' && pathname === '/api/users/me') return ok(MOCK_USER)
