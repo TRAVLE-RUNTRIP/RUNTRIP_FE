@@ -1,8 +1,21 @@
 // API 명세 예시를 바탕으로 만든 mock 데이터예요. 실제 장소·경로가 아니에요.
-import type { Course, CoursePlace, PathPoint, User } from '../types'
+import type { Course, CoursePlace, LocationResult, PathPoint, User } from '../types'
 
 export const MOCK_USER: User = { userId: 1, nickname: '테스트러너', email: 'test@runtrip.test' }
 export const MOCK_PASSWORD = 'runtrip1234'
+
+// 3. 장소 검색 mock 결과 (서울 안만, 좌표는 대략)
+export const MOCK_LOCATIONS: LocationResult[] = [
+  { name: '경복궁', address: '서울 종로구 사직로 161', lat: 37.5796, lng: 126.977 },
+  { name: '광화문 광장', address: '서울 종로구 세종대로 172', lat: 37.5724, lng: 126.9769 },
+  { name: '서울광장', address: '서울 중구 세종대로 110', lat: 37.5663, lng: 126.9779 },
+  { name: '청계광장', address: '서울 종로구 서린동 14', lat: 37.5692, lng: 126.9776 },
+  { name: '남산서울타워', address: '서울 용산구 남산공원길 105', lat: 37.5512, lng: 126.9882 },
+  { name: '서울숲', address: '서울 성동구 뚝섬로 273', lat: 37.5444, lng: 127.0374 },
+  { name: '여의도 한강공원', address: '서울 영등포구 여의동로 330', lat: 37.5284, lng: 126.9327 },
+  { name: '롯데월드타워', address: '서울 송파구 올림픽로 300', lat: 37.5126, lng: 127.1025 },
+  { name: '북한산 우이역', address: '서울 강북구 삼양로 지하 552', lat: 37.6633, lng: 127.0124 },
+]
 
 // 시청 앞을 출발해 덕수궁 → 청계천 → 시청으로 돌아오는 가짜 순환 경로
 const LOOP_PATH: PathPoint[] = [

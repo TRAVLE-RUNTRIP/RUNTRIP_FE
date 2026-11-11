@@ -27,8 +27,10 @@ export function SplashPage() {
 
   return (
     <section className="splash">
-      <h1 className="splash-logo">RUN+Trip</h1>
-      <p className="splash-tagline">달리면서 서울을 여행해요</p>
+      <h1 className="splash-logo">
+        RUN<span className="logo-plus">+</span>Trip
+      </h1>
+      <p className="splash-tagline">달리면서 만나는 서울</p>
     </section>
   )
 }
@@ -69,7 +71,9 @@ export function LoginPage() {
 
   return (
     <section className="screen-body login">
-      <h1 className="login-logo">RUN+Trip</h1>
+      <h1 className="login-logo">
+        RUN<span className="logo-plus">+</span>Trip
+      </h1>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <input
           type="email"

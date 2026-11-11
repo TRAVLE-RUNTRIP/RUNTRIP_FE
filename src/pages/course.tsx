@@ -1,52 +1,19 @@
-// M-00 홈, M-10 조건 입력, M-11 생성 중, M-12 결과 (상세 구현: #4, #5, #6)
+// M-11 생성 중, M-12 결과 (상세 구현: #5, #6). M-00 홈은 home.tsx, M-10 조건 입력은 courseNew.tsx
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { Course, CreateCourseRequest } from '../api/types'
+import type { Course } from '../api/types'
 import { PlaceCard, placeCardSearch } from '../components/PlaceCard'
 import { Screen } from '../components/Screen'
 import { PATHS, toCourseResult } from '../routes/paths'
-
-export function HomePage() {
-  return (
-    <Screen id="M-00" title="홈">
-      <div className="stack">
-        <Link className="card-link" to={PATHS.courseNew}>
-          AI 코스 만들기
-        </Link>
-        <Link className="card-link" to={PATHS.runCountdown} state={{ type: 'FREE' }}>
-          자유 러닝
-        </Link>
-      </div>
-    </Screen>
-  )
-}
-
-// #4에서 실제 입력으로 바꿀 기본 조건 (시청 앞 출발 5km 순환)
-const SAMPLE_REQUEST: CreateCourseRequest = {
-  start: { lat: 37.5658, lng: 126.9751 },
-  end: null,
-  targetKm: 5,
-  preferences: ['NIGHT_VIEW', 'NATURE'],
-  excludedCombos: [],
-}
-
-export function CourseNewPage() {
-  return (
-    <Screen id="M-10" title="코스 조건 입력">
-      <p className="muted">출발지 · 도착지 · 거리 · 취향 입력 (#4)</p>
-      <Link className="primary button" to={PATHS.courseGenerating} state={{ request: SAMPLE_REQUEST }}>
-        코스 생성
-      </Link>
-    </Screen>
-  )
-}
+import type { CourseGeneratingState } from './courseNew'
 
 export function CourseGeneratingPage() {
   const navigate = useNavigate()
-  const { state } = useLocation() as { state: { request?: CreateCourseRequest } | null }
+  const { state } = useLocation() as { state: Partial<CourseGeneratingState> | null }
   const request = state?.request
+  const draft = state?.draft
   const [error, setError] = useState<ApiError | null>(null)
 
   useEffect(() => {
@@ -69,7 +36,9 @@ export function CourseGeneratingPage() {
       {error ? (
         <>
           <p className="error">{error.message}</p>
-          <Link to={PATHS.courseNew}>조건 수정</Link>
+          <Link to={PATHS.courseNew} state={{ draft }}>
+            조건 수정
+          </Link>
         </>
       ) : (
         <p className="muted">주변 장소 찾기 → 장소 점수 매기기 → 장소 조합 찾기 → 경로 잇기 (#5)</p>

@@ -1,7 +1,19 @@
 // VITE_USE_MOCK일 때 client.ts가 fetch 대신 부르는 가짜 서버예요.
 // 상태는 메모리에만 있어서 새로고침하면 처음으로 돌아가요.
-import type { Course, CreateCourseRequest, ErrorCode, LoginRequest, RsData, RunSummary, SaveRunRequest } from '../types'
-import { MOCK_PASSWORD, MOCK_REASONS, MOCK_USER, buildMockCourse } from './data'
+import { distanceM } from '../../lib/geo'
+import { isRoughlyInSeoul } from '../../lib/seoul'
+import type {
+  Course,
+  CreateCourseRequest,
+  ErrorCode,
+  LatLng,
+  LoginRequest,
+  MinDistanceRequest,
+  RsData,
+  RunSummary,
+  SaveRunRequest,
+} from '../types'
+import { MOCK_LOCATIONS, MOCK_PASSWORD, MOCK_REASONS, MOCK_USER, buildMockCourse } from './data'
 
 interface MockResponse {
   status: number
@@ -59,6 +71,8 @@ function fail(status: number, code: ErrorCode, message: string): MockResponse {
 
 const unauthenticated = () => fail(401, 'UNAUTHENTICATED', '다시 로그인해 주세요.')
 const courseNotFound = () => fail(404, 'COURSE_NOT_FOUND', '코스를 찾을 수 없어요.')
+const outOfSeoul = () => fail(422, 'OUT_OF_SEOUL', '서울에서만 만들 수 있어요')
+const anyOutOfSeoul = (...points: (LatLng | null)[]) => points.some((p) => p !== null && !isRoughlyInSeoul(p))
 
 export async function mockRequest(method: string, url: string, body: unknown): Promise<MockResponse> {
   const { pathname, searchParams } = new URL(url, window.location.origin)
@@ -83,19 +97,25 @@ export async function mockRequest(method: string, url: string, body: unknown): P
   if (method === 'GET' && pathname === '/api/locations/search') {
     const query = searchParams.get('query')?.trim()
     if (!query) return fail(400, 'VALIDATION_ERROR', '검색어를 입력해 주세요.')
-    return ok({
-      results: [{ name: query, address: '서울 종로구 사직로 161 (mock)', lat: 37.5796, lng: 126.977 }],
-    })
+    const results = MOCK_LOCATIONS.filter((l) => l.name.includes(query) || l.address.includes(query))
+    return ok({ results })
   }
 
   // 4. 최소 입력 거리
+  // 직선거리 × 1.3을 가장 짧은 길로, 그 1.1배를 최소 입력 거리로 흉내 내요.
   if (method === 'POST' && pathname === '/api/courses/min-distance') {
-    return ok({ shortestKm: 2.1, minInputKm: 2.4 })
+    const { start, end } = body as MinDistanceRequest
+    if (anyOutOfSeoul(start, end)) return outOfSeoul()
+    const shortestKm = Math.round((distanceM(start, end) / 1000) * 1.3 * 10) / 10
+    const minInputKm = Math.max(1, Math.ceil(shortestKm * 1.1 * 10) / 10)
+    if (minInputKm > 21) return fail(422, 'DESTINATION_TOO_FAR', '도착지가 너무 멀어요.')
+    return ok({ shortestKm, minInputKm })
   }
 
   // 5. 코스 생성
   if (method === 'POST' && pathname === '/api/courses') {
     const req = body as CreateCourseRequest
+    if (anyOutOfSeoul(req.start, req.end)) return outOfSeoul()
     if (req.targetKm < 1 || req.targetKm > 21) {
       return fail(400, 'VALIDATION_ERROR', '1~21km 사이로 입력해 주세요')
     }

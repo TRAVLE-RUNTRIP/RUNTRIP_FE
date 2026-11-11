@@ -1,14 +1,22 @@
-/* 임시 기본 스타일. 디자인 토큰·Pretendard는 UI 이슈에서 적용해요. */
+/* 디자인 토큰: Figma "RUN+Trip 앱 디자인" 기준 (#4에서 앱 전체에 적용) */
 :root {
-  --color-primary: #fc5230;
-  --color-text: #1f1f1f;
-  --color-muted: #767676;
-  --color-border: #e3e3e3;
+  --color-primary: #98fbcb; /* 주요 버튼·AI 코스 카드 */
+  --color-on-primary: #10241b;
+  --color-accent: #2f5e48; /* 진한 초록: 아이콘·강조 글자 */
+  --color-accent-soft: #bfffed; /* 선택된 칩·아이콘 배경 */
+  --color-accent-text: #1f4434; /* 선택된 칩 글자 */
+  --color-info-bg: #ddf8ec; /* 안내 상자 */
+  --color-text: #10241b;
+  --color-muted: #4a5e54;
+  --color-border: #d6ede2;
+  --color-border-strong: #bfd9cc;
+  --color-inverse: #10241b; /* 선택된 빠른 선택 버튼 */
   --color-bg: #ffffff;
   --color-error: #d93025;
-  --tab-height: 60px;
+  --tab-height: 76px;
+  --font-number: 'Space Grotesk', 'IBM Plex Sans KR', system-ui, sans-serif;
 
-  font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  font-family: 'IBM Plex Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   color: var(--color-text);
   background: var(--color-bg);
   -webkit-text-size-adjust: 100%;
@@ -92,7 +100,8 @@ button,
 
 .primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
+  font-weight: 700;
 }
 
 button:disabled {
@@ -125,6 +134,9 @@ button:disabled {
 .bottom-tab a {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
   align-items: center;
   justify-content: center;
   color: var(--color-muted);
@@ -132,8 +144,16 @@ button:disabled {
 }
 
 .bottom-tab a.active {
-  color: var(--color-primary);
+  color: var(--color-accent);
   font-weight: 700;
+}
+
+/* 아이콘 파일을 그대로 마스크로 써서 글자색(활성/비활성)을 따라가게 해요. */
+.tab-icon {
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  mask: var(--icon) center / contain no-repeat;
 }
 
 .place-card-backdrop {
@@ -226,8 +246,8 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .splash-logo {
@@ -238,7 +258,11 @@ button:disabled {
 
 .splash-tagline {
   margin: 0;
-  opacity: 0.9;
+  color: var(--color-accent);
+}
+
+.logo-plus {
+  color: var(--color-accent);
 }
 
 .login {
@@ -250,7 +274,7 @@ button:disabled {
 
 .login-logo {
   margin: 0 0 32px;
-  color: var(--color-primary);
+  color: var(--color-text);
   font-size: 32px;
   font-weight: 800;
   text-align: center;
@@ -258,4 +282,511 @@ button:disabled {
 
 input[aria-invalid='true'] {
   border-color: var(--color-error);
+}
+
+/* 공통: 헤더, 아이콘 버튼, 안내 문구 (#4) */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: calc(54px + env(safe-area-inset-top)) 12px 6px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+}
+
+.text-button {
+  padding: 0;
+  background: none;
+  color: var(--color-muted);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.field-error {
+  margin: 8px 0 0;
+  color: var(--color-error);
+  font-size: 13px;
+}
+
+.field-hint {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.block-button {
+  display: block;
+  width: 100%;
+  height: 56px;
+  border-radius: 14px;
+  font-size: 17px;
+}
+
+.info-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--color-info-bg);
+  color: var(--color-accent);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.info-box img {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* M-00 홈 (#4, Figma "04 메인") */
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: calc(56px + env(safe-area-inset-top)) 20px 24px;
+}
+
+.home-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.home-ai-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 210px;
+  padding: 21px 22px 22px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--color-primary);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.home-ai-route {
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.home-ai-eyebrow {
+  position: relative;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.home-ai-title {
+  position: relative;
+  width: 200px;
+  margin-top: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.home-ai-cta {
+  position: relative;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: auto;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.home-free-card {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.home-free-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--color-accent-soft);
+}
+
+.home-free-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-free-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.home-free-desc {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.home-section-title {
+  margin: 4px 0 -8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.home-places {
+  display: flex;
+  gap: 10px;
+  margin: 0 -20px;
+  padding: 0 20px 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 20px; /* 스냅해도 첫 카드가 화면 끝에 붙지 않게 */
+  list-style: none;
+}
+
+.home-place {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  width: 140px;
+  scroll-snap-align: start;
+}
+
+.home-place-photo {
+  display: block;
+  width: 140px;
+  height: 100px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.home-place-placeholder {
+  border: 1px solid var(--color-border);
+  background: linear-gradient(135deg, var(--color-accent-soft), var(--color-info-bg));
+}
+
+.home-place-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.home-place-caption {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+/* M-10 코스 조건 입력 (#4, Figma "05 코스 만들기") */
+.course-new {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-new-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 22px;
+  padding: 4px 20px 24px;
+}
+
+.form-section h2 {
+  margin: 0 0 9px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.form-section-sub {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.route-box {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.route-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 56px;
+  padding: 8px 16px;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.route-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+}
+
+.route-dot-start {
+  background: var(--color-accent);
+}
+
+.route-dot-end {
+  border: 2px solid #33473d;
+}
+
+.route-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.route-label {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.route-value {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-change {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.route-divider {
+  height: 1px;
+  margin-left: 38px;
+  background: var(--color-border);
+}
+
+.distance-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 72px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.distance-label {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.distance-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-number);
+  font-size: 28px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.distance-input:focus {
+  outline: none;
+}
+
+.distance-box:focus-within {
+  border-color: var(--color-accent);
+}
+
+.distance-input[aria-invalid='true'] {
+  color: var(--color-error);
+}
+
+.distance-unit {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.quick-km {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.quick-km-button {
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.quick-km-button.selected {
+  border-color: var(--color-inverse);
+  background: var(--color-inverse);
+  color: #fff;
+}
+
+.preference-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.preference-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  height: 72px;
+  padding: 12px 8px;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.preference-chip.selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.preference-label {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.preference-desc {
+  font-size: 12px;
+}
+
+.bottom-action {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 20px calc(28px + env(safe-area-inset-bottom));
+  background: var(--color-bg);
+}
+
+/* 출발지·도착지 검색 시트 */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(16 36 27 / 0.35);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 80dvh;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  background: var(--color-bg);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.sheet-option {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 15px;
+  text-align: left;
+}
+
+.sheet-search {
+  display: flex;
+  gap: 8px;
+}
+
+.sheet-search input {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sheet-results button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: none;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.sheet-result-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sheet-result-address {
+  color: var(--color-muted);
+  font-size: 13px;
 }
