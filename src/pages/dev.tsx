@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { LatLng, PathPoint } from '../api/types'
 import { distanceM } from '../lib/geo'
 import { useGeoWatch, type GeoError, type GeoSample } from '../lib/useGeoWatch'
-import { useWakeLock } from '../lib/useWakeLock'
+import { useWakeLock, type WakeLockEvent } from '../lib/useWakeLock'
 import { loadTmap, type TmapMap, type TmapMarker, type TmapNamespace, type TmapOverlay } from '../map/tmap'
 
 // 시청 앞 출발, 덕수궁 → 서울광장 → 청계광장 → 광화문 샘플 경로
@@ -42,36 +42,44 @@ interface Stats {
   intervalLast: number | null
   intervalAvg: number | null
   intervalMax: number | null
+  /** 가장 길게 끊긴 구간이 시작된 시각 */
+  intervalMaxAt: number | null
   rawDistance: number
   filteredDistance: number
-  dropped: number
+  droppedAccuracy: number
+  droppedJump: number
 }
 
 function computeStats(samples: GeoSample[]): Stats {
   const n = samples.length
   let intervalSum = 0
   let intervalMax = 0
+  let intervalMaxAt: number | null = null
   let rawDistance = 0
   let filteredDistance = 0
-  let dropped = 0
+  let droppedAccuracy = 0
+  let droppedJump = 0
   let lastKept: GeoSample | null = null
 
   samples.forEach((s, i) => {
     if (i > 0) {
       const gap = s.timestamp - samples[i - 1].timestamp
       intervalSum += gap
-      intervalMax = Math.max(intervalMax, gap)
+      if (gap > intervalMax) {
+        intervalMax = gap
+        intervalMaxAt = samples[i - 1].timestamp
+      }
       rawDistance += distanceM(samples[i - 1], s)
     }
     if (s.accuracy > ACCURACY_LIMIT_M) {
-      dropped++
+      droppedAccuracy++
       return
     }
     if (lastKept) {
       const d = distanceM(lastKept, s)
       const dt = (s.timestamp - lastKept.timestamp) / 1000
       if (dt > 0 && d / dt > JUMP_SPEED_LIMIT) {
-        dropped++
+        droppedJump++
         return
       }
       filteredDistance += d
@@ -86,9 +94,11 @@ function computeStats(samples: GeoSample[]): Stats {
     intervalLast: n > 1 ? samples[n - 1].timestamp - samples[n - 2].timestamp : null,
     intervalAvg: n > 1 ? intervalSum / (n - 1) : null,
     intervalMax: n > 1 ? intervalMax : null,
+    intervalMaxAt,
     rawDistance,
     filteredDistance,
-    dropped,
+    droppedAccuracy,
+    droppedJump,
   }
 }
 
@@ -111,6 +121,8 @@ export function MapCheckPage() {
   const [samples, setSamples] = useState<GeoSample[]>([])
   const [current, setCurrent] = useState<GeoSample | null>(null)
   const [copied, setCopied] = useState(false)
+  // 이번 측정 구간 (결과 복사는 이 구간 기록만 담아요)
+  const [session, setSession] = useState<{ start: number; end: number | null } | null>(null)
 
   const wakeLock = useWakeLock(measuring)
 
@@ -212,22 +224,39 @@ export function MapCheckPage() {
   const geoError = watchError ?? firstFixError
 
   const toggleMeasuring = () => {
-    if (!measuring) setSamples([])
+    if (measuring) {
+      setSession((prev) => prev && { ...prev, end: Date.now() })
+    } else {
+      setSamples([])
+      setSession({ start: Date.now(), end: null })
+    }
     setMeasuring((on) => !on)
   }
 
+  // 이번 측정 구간의 기록: 측정 시작·정지 + Wake Lock·화면 숨김/복귀 (오래된 순)
+  const sessionLog: WakeLockEvent[] = session
+    ? [
+        { at: session.start, message: '측정 시작' },
+        ...wakeLock.events.filter((e) => e.at >= session.start && (session.end === null || e.at <= session.end)).reverse(),
+        ...(session.end ? [{ at: session.end, message: '측정 정지' }] : []),
+      ]
+    : []
+  const hiddenCount = sessionLog.filter((e) => e.message === '화면 숨김').length
+  const sessionSec = session ? ((session.end ?? Date.now()) - session.start) / 1000 : null
+  const device = navigator.userAgent.match(/Android [\d.]+|iPhone OS [\d_]+|Windows NT [\d.]+|Mac OS X [\d_]+/)?.[0] ?? '기타'
+  const browser = navigator.userAgent.match(/(?:Chrome|CriOS|Firefox|Version)\/\d+/)?.[0] ?? ''
+  const REPORT_LOG_LIMIT = 15
+
   const report = [
     `[#2 검증 결과] ${new Date().toLocaleString('ko-KR')}`,
-    `기기: ${navigator.userAgent}`,
+    `기기: ${device} / ${browser}`,
+    `측정 시간 ${fmt(sessionSec, '초')}, 화면 숨김 ${hiddenCount}회, Wake Lock 지금 ${wakeLock.status}`,
     `지도: ${mapError ? `실패 (${mapError})` : mapReady ? '표시됨' : '로딩 중'}`,
     `위치 샘플 ${stats.count}개, 정확도 마지막 ${fmt(stats.accuracyLast, 'm')} / 평균 ${fmt(stats.accuracyAvg, 'm', 1)}`,
-    `갱신 간격 마지막 ${fmt(stats.intervalLast && stats.intervalLast / 1000, '초', 1)} / 평균 ${fmt(stats.intervalAvg && stats.intervalAvg / 1000, '초', 1)} / 최대 ${fmt(stats.intervalMax && stats.intervalMax / 1000, '초', 1)}`,
-    `거리 전체 ${fmt(stats.rawDistance, 'm')} / 필터 후 ${fmt(stats.filteredDistance, 'm')} (정확도 ${ACCURACY_LIMIT_M}m 초과·${JUMP_SPEED_LIMIT}m/s 초과 제외 ${stats.dropped}개)`,
-    `Wake Lock: ${wakeLock.status}`,
-    ...wakeLock.events
-      .slice()
-      .reverse()
-      .map((e) => `  ${clock(e.at)} ${e.message}`),
+    `갱신 간격 마지막 ${fmt(stats.intervalLast && stats.intervalLast / 1000, '초', 1)} / 평균 ${fmt(stats.intervalAvg && stats.intervalAvg / 1000, '초', 1)} / 최대 ${fmt(stats.intervalMax && stats.intervalMax / 1000, '초', 1)}${stats.intervalMaxAt ? ` (${clock(stats.intervalMaxAt)}부터)` : ''}`,
+    `거리 전체 ${fmt(stats.rawDistance, 'm')} / 필터 후 ${fmt(stats.filteredDistance, 'm')} (제외: 정확도 ${ACCURACY_LIMIT_M}m 초과 ${stats.droppedAccuracy}개, ${JUMP_SPEED_LIMIT}m/s 초과 ${stats.droppedJump}개)`,
+    `기록${sessionLog.length > REPORT_LOG_LIMIT ? ` (마지막 ${REPORT_LOG_LIMIT}개)` : ''}:`,
+    ...sessionLog.slice(-REPORT_LOG_LIMIT).map((e) => `  ${clock(e.at)} ${e.message}`),
   ].join('\n')
 
   const copyReport = async () => {
@@ -283,19 +312,23 @@ export function MapCheckPage() {
           <dd>{fmt(current?.speed ?? null, 'm/s', 1)}</dd>
           <dt>샘플 수 (제외)</dt>
           <dd>
-            {stats.count} ({stats.dropped})
+            {stats.count} (정확도 {stats.droppedAccuracy} · 튐 {stats.droppedJump})
           </dd>
           <dt>거리 (전체 / 필터 후)</dt>
           <dd>
             {fmt(stats.rawDistance, 'm')} / {fmt(stats.filteredDistance, 'm')}
           </dd>
+          <dt>측정 시간 (화면 숨김)</dt>
+          <dd>
+            {fmt(sessionSec, '초')} ({hiddenCount}회)
+          </dd>
           <dt>Wake Lock</dt>
           <dd>{wakeLock.supported ? wakeLock.status : '지원 안 함'}</dd>
         </dl>
 
-        {wakeLock.events.length > 0 && (
+        {sessionLog.length > 0 && (
           <ul className="map-check-log">
-            {wakeLock.events.map((e) => (
+            {sessionLog.toReversed().map((e) => (
               <li key={`${e.at}-${e.message}`}>
                 {clock(e.at)} {e.message}
               </li>
