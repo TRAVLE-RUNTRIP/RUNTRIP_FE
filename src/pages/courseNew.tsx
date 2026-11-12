@@ -31,7 +31,7 @@ const MIN_KM = 1
 const MAX_KM = 21
 const QUICK_KM = [3, 5, 10]
 
-const PREFERENCES: { value: Preference; label: string; desc: string }[] = [
+export const PREFERENCES: { value: Preference; label: string; desc: string }[] = [
   { value: 'NIGHT_VIEW', label: '야경', desc: '밤에 빛나는 곳' },
   { value: 'ATTRACTION', label: '관광 명소', desc: '궁·광장·거리' },
   { value: 'NATURE', label: '자연·공원', desc: '강변·숲길' },
@@ -168,7 +168,8 @@ export function CourseNewPage() {
       excludedCombos: [],
     }
     const next: CourseGeneratingState = { request, draft }
-    navigate(PATHS.courseGenerating, { state: next })
+    // 기록을 바꿔치기해서 결과 화면(M-12)에서 뒤로가기를 누르면 조건 입력이 아니라 홈으로 가요 (F-04, #5).
+    navigate(PATHS.courseGenerating, { replace: true, state: next })
   }
 
   const togglePreference = (value: Preference) =>

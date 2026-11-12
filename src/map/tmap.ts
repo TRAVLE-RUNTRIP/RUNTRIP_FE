@@ -30,6 +30,7 @@ export interface TmapMap {
 export interface TmapNamespace {
   LatLng: new (lat: number, lng: number) => TmapLatLng
   LatLngBounds: new () => TmapLatLngBounds
+  Size: new (width: number, height: number) => unknown
   Map: new (
     divId: string,
     options: { center: TmapLatLng; width: string; height: string; zoom: number; zoomControl?: boolean },
