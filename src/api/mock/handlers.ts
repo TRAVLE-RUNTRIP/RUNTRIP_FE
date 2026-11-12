@@ -13,7 +13,7 @@ import type {
   RunSummary,
   SaveRunRequest,
 } from '../types'
-import { MOCK_LOCATIONS, MOCK_PASSWORD, MOCK_REASONS, MOCK_USER, buildMockCourse } from './data'
+import { MOCK_LOCATIONS, MOCK_PASSWORD, MOCK_REASONS, MOCK_USER, buildMockCourse, generateMockCourse } from './data'
 
 interface MockResponse {
   status: number
@@ -74,6 +74,14 @@ const courseNotFound = () => fail(404, 'COURSE_NOT_FOUND', '코스를 찾을 수
 const outOfSeoul = () => fail(422, 'OUT_OF_SEOUL', '서울에서만 만들 수 있어요')
 const anyOutOfSeoul = (...points: (LatLng | null)[]) => points.some((p) => p !== null && !isRoughlyInSeoul(p))
 
+// 실패 화면(M-11) 확인용: mock에서만 이 목표 거리로 만들면 해당 오류가 나요.
+// NO_MORE_COURSES는 [다시 만들기]를 3번 누르면, OUT_OF_SEOUL은 서울 밖 출발지로 확인해요.
+const MOCK_ERROR_BY_KM: Record<number, { status: number; code: ErrorCode; message: string }> = {
+  13: { status: 422, code: 'NO_PLACES', message: '조건에 맞는 장소를 찾지 못했어요.' },
+  17: { status: 504, code: 'GENERATION_TIMEOUT', message: '코스 생성 시간이 초과됐어요.' },
+  19: { status: 500, code: 'SERVER_ERROR', message: '잠시 후 다시 시도해 주세요.' },
+}
+
 export async function mockRequest(method: string, url: string, body: unknown): Promise<MockResponse> {
   const { pathname, searchParams } = new URL(url, window.location.origin)
   await sleep(method === 'POST' && pathname === '/api/courses' ? COURSE_LATENCY_MS : LATENCY_MS)
@@ -120,18 +128,11 @@ export async function mockRequest(method: string, url: string, body: unknown): P
       return fail(400, 'VALIDATION_ERROR', '1~21km 사이로 입력해 주세요')
     }
     if (req.preferences.length === 0) return fail(400, 'VALIDATION_ERROR', '취향을 1개 이상 골라 주세요')
-    if (req.excludedCombos.length >= 3) {
-      return fail(422, 'NO_MORE_COURSES', '같은 조건으로 만들 수 있는 코스를 모두 보여드렸어요.')
-    }
+    const forced = MOCK_ERROR_BY_KM[req.targetKm]
+    if (forced) return fail(forced.status, forced.code, forced.message)
+    const course = generateMockCourse(state.nextCourseId, req)
+    if (!course) return fail(422, 'NO_MORE_COURSES', '같은 조건으로 만들 수 있는 코스를 모두 보여드렸어요.')
     const courseId = state.nextCourseId++
-    const course = buildMockCourse(courseId, {
-      type: req.end ? 'ONE_WAY' : 'LOOP',
-      distanceKm: Math.round(req.targetKm * 1.04 * 10) / 10,
-      estimatedMinutes: Math.round(req.targetKm * 1.04 * 6),
-      start: req.start,
-      end: req.end ?? req.start,
-      preferences: req.preferences,
-    })
     state.courses.set(courseId, course)
     state.reasonPolls.set(courseId, 0)
     return ok(course, 201)
