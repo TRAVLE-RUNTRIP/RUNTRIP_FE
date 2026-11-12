@@ -790,3 +790,383 @@ input[aria-invalid='true'] {
   color: var(--color-muted);
   font-size: 13px;
 }
+
+/* 공통: 보조 버튼, 버튼 두 개 나란히, 숫자 글꼴 (#5) */
+.number {
+  font-family: var(--font-number);
+}
+
+.secondary {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+a.block-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-pair {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+
+.page-header-solo {
+  padding-left: 8px;
+}
+
+.outline-button {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 14px;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* M-11 생성 중·실패 (#5) */
+.generating {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.generating-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 24px;
+  text-align: center;
+}
+
+.status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+}
+
+.status-icon-loading {
+  background: var(--color-accent-soft);
+}
+
+.status-icon-error {
+  background: #fdecea;
+  color: var(--color-error);
+  font-family: var(--font-number);
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-primary);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.generating-title {
+  margin: 18px 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.generating-desc {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.generating-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin: 28px 0 20px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.generating-step {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--color-muted);
+  font-size: 15px;
+  transition: background 0.2s;
+}
+
+.generating-step-mark {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 12px;
+  font-family: var(--font-number);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.generating-step.active {
+  background: var(--color-info-bg);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.generating-step.active .generating-step-mark {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.generating-step.done {
+  color: var(--color-text);
+}
+
+.generating-step.done .generating-step-mark {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.request-summary {
+  width: 100%;
+  margin: 24px 0 0;
+  padding: 4px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  text-align: left;
+}
+
+.request-summary div {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+.request-summary div + div {
+  border-top: 1px solid var(--color-border);
+}
+
+.request-summary dt {
+  flex: none;
+  width: 36px;
+  color: var(--color-muted);
+}
+
+.request-summary dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.generating-steps + .request-summary {
+  margin-top: 0;
+}
+
+/* M-12 코스 결과 (#5) */
+.course-result {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-map {
+  position: relative;
+  flex: none;
+  height: 42dvh;
+  min-height: 260px;
+  max-height: 420px;
+  background: #eef4f0;
+}
+
+.course-map-loading {
+  background: linear-gradient(90deg, #eef4f0 0%, #f6faf8 50%, #eef4f0 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.course-map-sketch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.course-map-sketch svg {
+  width: 100%;
+  height: 100%;
+}
+
+.course-map-note {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--color-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.course-result-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: -16px;
+  padding: 20px 20px 24px;
+  border-radius: 20px 20px 0 0;
+  background: var(--color-bg);
+  position: relative;
+  z-index: 1; /* 지도 위로 살짝 겹치는 시트 */
+}
+
+.course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.course-tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-info-bg);
+  color: var(--color-accent-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.course-tag-strong {
+  background: var(--color-inverse);
+  color: #fff;
+}
+
+.course-name {
+  margin: 10px 0 14px;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.course-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  padding: 14px 0;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.course-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.course-stats div + div {
+  border-left: 1px solid var(--color-border);
+}
+
+.course-stats dt {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.course-stats dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.course-stats .number {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.course-places-section h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.course-places {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.course-place {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.course-place-order {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--color-accent);
+  color: #fff;
+  font-family: var(--font-number);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.course-place-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.course-place-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.course-place-category {
+  color: var(--color-muted);
+  font-size: 12px;
+}
