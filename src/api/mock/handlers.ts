@@ -54,6 +54,8 @@ const state = {
   nextCourseId: 101,
   courses: new Map<number, Course>(),
   reasonPolls: new Map<number, number>(),
+  /** 추천 이유가 끝까지 PENDING인 코스 (개요 대체 확인용) */
+  reasonsStuck: new Set<number>(),
   runs: [] as RunSummary[],
   runIds: new Set<string>(),
 }
@@ -81,6 +83,9 @@ const MOCK_ERROR_BY_KM: Record<number, { status: number; code: ErrorCode; messag
   17: { status: 504, code: 'GENERATION_TIMEOUT', message: '코스 생성 시간이 초과됐어요.' },
   19: { status: 500, code: 'SERVER_ERROR', message: '잠시 후 다시 시도해 주세요.' },
 }
+
+// 장소 카드(#6) 확인용: 이 목표 거리로 만든 코스는 추천 이유가 끝까지 PENDING이라 장소 개요로 대신해요.
+const MOCK_REASONS_PENDING_KM = 11
 
 export async function mockRequest(method: string, url: string, body: unknown): Promise<MockResponse> {
   const { pathname, searchParams } = new URL(url, window.location.origin)
@@ -135,6 +140,7 @@ export async function mockRequest(method: string, url: string, body: unknown): P
     const courseId = state.nextCourseId++
     state.courses.set(courseId, course)
     state.reasonPolls.set(courseId, 0)
+    if (req.targetKm === MOCK_REASONS_PENDING_KM) state.reasonsStuck.add(courseId)
     return ok(course, 201)
   }
 
@@ -168,18 +174,22 @@ export async function mockRequest(method: string, url: string, body: unknown): P
     }
     if (!course) return courseNotFound()
 
-    // 6. 추천 이유: 두 번째 조회부터 DONE
+    // 6. 추천 이유: 두 번째 조회부터 DONE. 문장이 없는 장소는 개요로 대신해요(source: OVERVIEW, 개요도 없으면 null).
     if (method === 'GET' && sub === '/reasons') {
       const polls = (state.reasonPolls.get(courseId) ?? 0) + 1
       state.reasonPolls.set(courseId, polls)
-      const done = polls >= 2
+      const done = polls >= 2 && !state.reasonsStuck.has(courseId)
       if (done) {
         course.places = course.places.map((p) => ({ ...p, reason: MOCK_REASONS[p.placeId] ?? p.overview }))
       }
       return ok({
         status: done ? 'DONE' : 'PENDING',
         reasons: done
-          ? course.places.map((p) => ({ placeId: p.placeId, reason: p.reason, source: 'GEMINI' }))
+          ? course.places.map((p) => ({
+              placeId: p.placeId,
+              reason: p.reason,
+              source: MOCK_REASONS[p.placeId] ? 'GEMINI' : 'OVERVIEW',
+            }))
           : [],
       })
     }

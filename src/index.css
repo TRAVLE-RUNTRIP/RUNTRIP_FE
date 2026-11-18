@@ -156,9 +156,11 @@ button:disabled {
   mask: var(--icon) center / contain no-repeat;
 }
 
+/* M-21b 장소 설명 카드 (#6) */
 .place-card-backdrop {
   position: fixed;
   inset: 0;
+  z-index: 20;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -169,17 +171,136 @@ button:disabled {
   position: relative;
   width: 100%;
   max-width: 480px;
-  padding: 20px;
-  border-radius: 16px 16px 0 0;
+  max-height: 85dvh;
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
   background: var(--color-bg);
+  animation: place-card-up 0.2s ease-out;
+}
+
+@keyframes place-card-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+.place-card-figure {
+  position: relative;
+  margin: 0;
+}
+
+.place-card-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--color-info-bg);
+}
+
+.place-card-photo-default {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-accent-soft), var(--color-info-bg));
+}
+
+.place-card-photo-default img {
+  opacity: 0.55;
+}
+
+.place-card-credit {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.5);
+  color: #fff;
+  font-size: 11px;
+}
+
+.place-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 20px calc(24px + env(safe-area-inset-bottom));
+}
+
+.place-card-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.place-card-title {
+  min-width: 0;
+}
+
+.place-card-title h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.place-card-title p {
+  margin: 2px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.place-card-reason,
+.place-card-overview {
+  margin: 0;
+}
+
+.place-card-reason {
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--color-info-bg);
+}
+
+.place-card-reason h3,
+.place-card-overview h3 {
+  margin: 0 0 6px;
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.place-card-reason p,
+.place-card-overview p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.place-card-reason-loading p {
+  color: var(--color-muted);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .place-card-close {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--color-text);
   font-size: 24px;
+  line-height: 1;
 }
 
 /* #2 실기기 검증 화면 (/dev/map-check) */
@@ -1169,4 +1290,21 @@ a.block-button {
 .course-place-category {
   color: var(--color-muted);
   font-size: 12px;
+}
+
+/* F-05 경유 장소별 한 줄 추천 이유 (#6) */
+.course-place-reason {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--color-accent-text);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.course-place-reason-loading {
+  color: var(--color-muted);
+  animation: pulse 1.2s ease-in-out infinite;
 }

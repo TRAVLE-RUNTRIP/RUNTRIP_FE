@@ -1,4 +1,4 @@
-// M-11 생성 중·실패, M-12 코스 결과 (#5, 기능명세서 F-03·F-04·F-07·F-09). 추천 이유·장소 카드는 #6, 안전 조언은 #11.
+// M-11 생성 중·실패, M-12 코스 결과 (#5, 기능명세서 F-03·F-04·F-07·F-09). 추천 이유·장소 카드는 #6(F-05·F-08), 안전 조언은 #11.
 // M-00 홈은 home.tsx, M-10 조건 입력은 courseNew.tsx
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -8,6 +8,7 @@ import type { Course, CourseType, CreateCourseRequest, ErrorCode } from '../api/
 import backIcon from '../assets/icons/back.svg'
 import chevronRightIcon from '../assets/icons/chevron-right.svg'
 import { PlaceCard, placeCardSearch } from '../components/PlaceCard'
+import { useCourseReasons } from '../lib/useCourseReasons'
 import { CourseMap } from '../map/CourseMap'
 import { PATHS, toCourseResult } from '../routes/paths'
 import { PREFERENCES, type CourseDraft, type CourseGeneratingState } from './courseNew'
@@ -250,6 +251,8 @@ export function CourseResultPage() {
   const { courseId } = useParams()
   const { state } = useLocation() as { state: Partial<CourseResultState> | null }
   const { course, error } = useCourse(courseId)
+  // F-05: 결과가 뜬 뒤 추천 이유를 이어서 받아요.
+  const { places, status: reasonStatus } = useCourseReasons(course)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -327,7 +330,6 @@ export function CourseResultPage() {
   }
 
   const runState: RunEntryState = { type: 'COURSE', courseId: course.courseId }
-  const places = [...course.places].sort((a, b) => a.order - b.order)
 
   return (
     <section className="course-result">
@@ -376,18 +378,29 @@ export function CourseResultPage() {
         <section className="course-places-section">
           <h3>경유 장소</h3>
           <ol className="course-places">
-            {places.map((p) => (
-              <li key={p.placeId}>
-                <Link className="course-place" to={placeCardSearch(p.placeId)}>
-                  <span className="course-place-order">{p.order}</span>
-                  <span className="course-place-text">
-                    <span className="course-place-name">{p.name}</span>
-                    <span className="course-place-category">{p.category}</span>
-                  </span>
-                  <img src={chevronRightIcon} width={18} height={18} alt="" />
-                </Link>
-              </li>
-            ))}
+            {places.map((p) => {
+              // F-05: 추천 이유 → 없으면 장소 개요 → 개요도 없으면 이름·분류만
+              const line = p.reason ?? (reasonStatus === 'done' ? p.overview : null)
+              return (
+                <li key={p.placeId}>
+                  <Link className="course-place" to={placeCardSearch(p.placeId)}>
+                    <span className="course-place-order">{p.order}</span>
+                    <span className="course-place-text">
+                      <span className="course-place-name">{p.name}</span>
+                      <span className="course-place-category">{p.category}</span>
+                      {line ? (
+                        <span className="course-place-reason">{line}</span>
+                      ) : (
+                        reasonStatus === 'loading' && (
+                          <span className="course-place-reason course-place-reason-loading">추천 이유를 불러오고 있어요</span>
+                        )
+                      )}
+                    </span>
+                    <img src={chevronRightIcon} width={18} height={18} alt="" />
+                  </Link>
+                </li>
+              )
+            })}
           </ol>
         </section>
 
@@ -412,7 +425,7 @@ export function CourseResultPage() {
         </Link>
       </div>
 
-      <PlaceCard places={course.places} />
+      <PlaceCard places={places} reasonStatus={reasonStatus} />
     </section>
   )
 }
