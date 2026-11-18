@@ -121,6 +121,8 @@ mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2는
 - 진행: #2 완료(`feat#2-jongwon`). Android 10 / Chrome 150에서 T map 지도·경로선·마커·현재 위치, GPS(평균 정확도 약 11m, 약 1초 갱신), Wake Lock(앱 전환 후 복귀 시 재획득) 확인. 검증 화면 `/dev/map-check`. T map 앱 키는 Vercel 환경 변수 `VITE_TMAP_APP_KEY`(Production·Preview), 허용 IP 제한 없음
 - 진행: #3 mock 기준 구현(`feat#3-jongwon`). 세션 확인은 `src/auth/session.ts`(API 2로 확인, 앱 실행 중 한 번), 보호 화면은 `RequireAuth`로 감쌈(스플래시·로그인·`/dev/map-check` 제외). mock 세션은 만료 시각을 localStorage에 저장해 새로고침 후 24시간 유지. **이슈 #3은 BE #5(EC2 배포) 후 실제 API로 새로고침 유지까지 확인하고 닫음**
 - 진행: #5 mock 기준 구현(`feat#5-jongwon`). 지도는 `src/map/CourseMap.tsx`(경로선·출발/도착·번호 마커, T map 실패 시 경로 모양 그림으로 대체, #7·#9에서 재사용). 조건 입력 → 생성 중은 `replace`로 이동해 결과에서 뒤로가기 = 홈. 다시 만들기는 결과 화면 state의 `request.excludedCombos`에 지금 조합(placeId 순서대로)을 더해 보냄. mock 실패 확인: 목표 거리 13km `NO_PLACES`, 17km `GENERATION_TIMEOUT`, 19km `SERVER_ERROR`, 다시 만들기 3번이면 `NO_MORE_COURSES`. 실패 문구 일부는 기능명세서에 없어 임시(`course.tsx` `failureCopy`)
+- 진행: #6 mock 기준 구현(`feat#6-jongwon`). 추천 이유 조회는 `src/lib/useCourseReasons.ts`(결과 표시 직후 1회 + 1초 간격, 최대 5번, 실패도 1회로 셈. 모든 장소에 이유가 있으면 조회 안 함). 카드는 `src/components/PlaceCard.tsx`(사진·출처, 추천 이유, 소개, 닫기 = ×·배경·Esc). 개요로 대체된 이유(`reason === overview`)는 카드에서 소개와 겹치지 않게 숨기고, 결과 화면 경유 장소 목록에는 이유 → 개요 → 이름·분류 순으로 한 줄 표시. 사진이 없거나 못 불러오면 기본 이미지, 출처는 실제 사진에만. mock 확인: 목표 거리 11km면 추천 이유가 끝까지 PENDING, 덕수궁 돌담길은 사진 있음, 서울로 7017은 깨진 사진 주소
+- 결정: 안전도에 보행 환경(`walk_score`, `walk_segments`, 보행 경고)을 추가하는 AI 쪽 요청대로 진행하기로 함. #11에서 반영하고, 노션 API 명세 B4·A-5가 고쳐지면 필드 이름과 구간 형식을 맞춤
 
 ## 러닝 측정 기준 후보 (#2 실측, #7에서 적용)
 
