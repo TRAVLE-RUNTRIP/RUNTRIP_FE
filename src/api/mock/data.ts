@@ -111,24 +111,50 @@ export const MOCK_REASONS: Record<string, string> = {
 // 출발지·목표 거리에 맞춰 가짜 경로를 만들어요. 다시 만들기(excludedCombos)를 확인할 수 있게
 // 장소 조합 3개를 차례로 돌려주고, 모두 보여주면 NO_MORE_COURSES가 나요.
 
-type MockPlaceSeed = Pick<CoursePlace, 'placeId' | 'name' | 'category' | 'overview' | 'imageCredit'>
+type MockPlaceSeed = Pick<CoursePlace, 'placeId' | 'name' | 'category' | 'overview' | 'imageUrl' | 'imageCredit'>
+
+// 장소 카드(#6) 확인용 사진: 덕수궁 돌담길은 앱 아이콘을 사진 대신 쓰고, 서울로 7017은 없는 주소라 기본 이미지로 바뀌어요.
+const MOCK_PHOTO = '/pwa-512x512.png'
+const MOCK_BROKEN_PHOTO = '/mock-missing-photo.jpg'
 
 const MOCK_COMBOS: MockPlaceSeed[][] = [
-  MOCK_PLACES.map(({ placeId, name, category, overview, imageCredit }) => ({
+  MOCK_PLACES.map(({ placeId, name, category, overview, imageCredit }, i) => ({
     placeId,
     name,
     category,
     overview,
+    imageUrl: i === 0 ? MOCK_PHOTO : null,
     imageCredit,
   })),
   [
-    { placeId: 'M2001', name: '서울로 7017', category: '관광 명소', overview: '옛 고가도로를 고친 보행길이에요. (mock)', imageCredit: null },
-    { placeId: 'M2002', name: '남산 둘레길', category: '자연·공원', overview: null, imageCredit: null },
-    { placeId: 'M2003', name: '남산 전망대', category: '야경', overview: '서울 시내가 내려다보이는 전망대예요. (mock)', imageCredit: null },
+    {
+      placeId: 'M2001',
+      name: '서울로 7017',
+      category: '관광 명소',
+      overview: '옛 고가도로를 고친 보행길이에요. (mock)',
+      imageUrl: MOCK_BROKEN_PHOTO,
+      imageCredit: '서울시',
+    },
+    { placeId: 'M2002', name: '남산 둘레길', category: '자연·공원', overview: null, imageUrl: null, imageCredit: null },
+    {
+      placeId: 'M2003',
+      name: '남산 전망대',
+      category: '야경',
+      overview: '서울 시내가 내려다보이는 전망대예요. (mock)',
+      imageUrl: null,
+      imageCredit: null,
+    },
   ],
   [
-    { placeId: 'M3001', name: '낙산공원 성곽길', category: '야경', overview: '한양도성을 따라 걷는 길이에요. (mock)', imageCredit: null },
-    { placeId: 'M3002', name: '이화 벽화마을', category: '관광 명소', overview: null, imageCredit: null },
+    {
+      placeId: 'M3001',
+      name: '낙산공원 성곽길',
+      category: '야경',
+      overview: '한양도성을 따라 걷는 길이에요. (mock)',
+      imageUrl: null,
+      imageCredit: null,
+    },
+    { placeId: 'M3002', name: '이화 벽화마을', category: '관광 명소', overview: null, imageUrl: null, imageCredit: null },
   ],
 ]
 
@@ -227,7 +253,6 @@ export function generateMockCourse(
       lng: spot.lng,
       routeLat: at[0],
       routeLng: at[1],
-      imageUrl: null,
       reason: null,
     }
   })
