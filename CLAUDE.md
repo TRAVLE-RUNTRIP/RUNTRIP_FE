@@ -33,7 +33,7 @@ npm run build && npm run lint
 | `vite.config.ts` | PWA 설정. Service Worker는 `/api`를 캐시하지 않음(NetworkOnly + navigateFallback 제외) |
 | `vercel.json` | `/api/*` → `https://api.project03.cloud/api/*` (EC2, Caddy HTTPS), 나머지 → `index.html` |
 
-mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2는 다른 비밀번호)
+mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2 계정은 레포에 적지 않음)
 
 ## 화면 (와이어프레임 v1.5, 화면 12개 + 장소 카드)
 
@@ -122,13 +122,16 @@ mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2는
 - 진행: #3 mock 기준 구현(`feat#3-jongwon`). 세션 확인은 `src/auth/session.ts`(API 2로 확인, 앱 실행 중 한 번), 보호 화면은 `RequireAuth`로 감쌈(스플래시·로그인·`/dev/map-check` 제외). mock 세션은 만료 시각을 localStorage에 저장해 새로고침 후 24시간 유지. **이슈 #3은 BE #5(EC2 배포) 후 실제 API로 새로고침 유지까지 확인하고 닫음**
 - 진행: #5 mock 기준 구현(`feat#5-jongwon`). 지도는 `src/map/CourseMap.tsx`(경로선·출발/도착·번호 마커, T map 실패 시 경로 모양 그림으로 대체, #7·#9에서 재사용). 조건 입력 → 생성 중은 `replace`로 이동해 결과에서 뒤로가기 = 홈. 다시 만들기는 결과 화면 state의 `request.excludedCombos`에 지금 조합(placeId 순서대로)을 더해 보냄. mock 실패 확인: 목표 거리 13km `NO_PLACES`, 17km `GENERATION_TIMEOUT`, 19km `SERVER_ERROR`, 다시 만들기 3번이면 `NO_MORE_COURSES`. 실패 문구 일부는 기능명세서에 없어 임시(`course.tsx` `failureCopy`)
 - 진행: #6 mock 기준 구현(`feat#6-jongwon`). 추천 이유 조회는 `src/lib/useCourseReasons.ts`(결과 표시 직후 1회 + 1초 간격, 최대 5번, 실패도 1회로 셈. 모든 장소에 이유가 있으면 조회 안 함). 카드는 `src/components/PlaceCard.tsx`(사진·출처, 추천 이유, 소개, 닫기 = ×·배경·Esc). 개요로 대체된 이유(`reason === overview`)는 카드에서 소개와 겹치지 않게 숨기고, 결과 화면 경유 장소 목록에는 이유 → 개요 → 이름·분류 순으로 한 줄 표시. 사진이 없거나 못 불러오면 기본 이미지, 출처는 실제 사진에만. mock 확인: 목표 거리 11km면 추천 이유가 끝까지 PENDING, 덕수궁 돌담길은 사진 있음, 서울로 7017은 깨진 사진 주소
+- 진행: #3 완료. develop 배포(`VITE_USE_MOCK=false`)에서 실제 API 로그인·실패 문구·새로고침 유지 확인
+- 진행: #7 구현(`feat#7-jongwon`). 측정 계산·기기 저장은 `src/lib/runTracker.ts`(`RunDraft`, localStorage `runtrip:run-draft`, `runId`는 앱이 만든 UUID — #8에서 그대로 API 11에 씀), 지도는 `src/map/RunMap.tsx`. 카운트다운은 끝나지 않은 기록이 있으면 새로 시작하지 않고 M-21(측정 중)·M-22(종료됨)로 보냄. 새로고침·재실행 시 마지막 저장 시각 이후는 빼고 일시정지로 열림. 출발점 안내 기준 100m와 문구는 기능명세서에 없어 임시. M-22는 #8 전까지 요약·[저장 안 함]만 있는 임시 화면. PC 확인용 가짜 GPS: `npm run dev`에서 주소에 `?fakegps`(끄기 `?fakegps=off`). 휴대폰은 https가 필요해 Vercel 미리보기로 확인(자유 러닝 실기기 확인 완료)
 - 결정: 안전도에 보행 환경(`walk_score`, `walk_segments`, 보행 경고)을 추가하는 AI 쪽 요청대로 진행하기로 함. #11에서 반영하고, 노션 API 명세 B4·A-5가 고쳐지면 필드 이름과 구간 형식을 맞춤
 
-## 러닝 측정 기준 후보 (#2 실측, #7에서 적용)
+## 러닝 측정 기준 (#2 실측, #7에서 적용)
 
 - SDK·훅: `src/map/tmap.ts`(`loadTmap()`, 공식 로더의 document.write를 가로채서 불러옴), `src/lib/useGeoWatch.ts`, `src/lib/useWakeLock.ts`, `src/lib/geo.ts`(`distanceM`)
 - 정확도 20m 초과 위치는 거리 계산에서 제외. 측정 시작 직후에 많이 나오므로 카운트다운(M-20)에서 정확도 20m 이내가 될 때까지 대기
-- 직전 위치 대비 8.5m/s(약 2분/km) 초과로 튄 위치는 제외
+- 직전 위치 대비 8.5m/s(약 2분/km) 초과로 튄 위치는 제외. 2m 미만 이동은 제자리 흔들림으로 보고 더하지 않음(움직임이 쌓이면 더함)
+- 위치가 15초 넘게 끊기면 구간을 나눔. 장소 방문은 `routeLat/routeLng` 50m 안
 - 화면 끔·앱 전환 중에는 위치가 들어오지 않음(실측 91초 공백). 공백은 직선으로 잇지 않고 구간을 나누고, 복귀 시 Wake Lock 재요청
 
 ## 깃 규칙 (팀 노션 "깃 규칙 정리")
