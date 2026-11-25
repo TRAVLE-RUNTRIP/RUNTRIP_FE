@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://BACKEND_DOMAIN/api/:path*"
+      "destination": "https://api.project03.cloud/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
