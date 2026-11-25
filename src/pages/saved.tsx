@@ -1,14 +1,14 @@
-// C-02 저장 코스 목록, C-03 코스 상세 (#9, 기능명세서 F-14·F-15·F-16), P-01 마이 (#10)
+// C-02 저장 코스 목록, C-03 코스 상세 (#9, 기능명세서 F-14·F-15·F-16), P-01 마이 (#10, F-17·F-18)
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { SavedCourseSummary } from '../api/types'
+import type { RunSummary, SavedCourseSummary, User } from '../api/types'
 import backIcon from '../assets/icons/back.svg'
 import chevronRightIcon from '../assets/icons/chevron-right.svg'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { PlaceCard, placeCardSearch } from '../components/PlaceCard'
-import { Screen } from '../components/Screen'
+import { formatDuration, formatPace, formatRunDate } from '../lib/runTracker'
 import { useCourseReasons } from '../lib/useCourseReasons'
 import { CourseMap } from '../map/CourseMap'
 import { PATHS, toCourseDetail } from '../routes/paths'
@@ -241,12 +241,88 @@ export function CourseDetailPage() {
   )
 }
 
-// ---- P-01 마이 (#10에서 구현) ----
+// ---- P-01 마이 (#10, 기능명세서 F-17·F-18) ----
 
 export function MyPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [runs, setRuns] = useState<RunSummary[] | null>(null)
+  const [error, setError] = useState(false)
+
+  const load = useCallback(() => {
+    setError(false)
+    Promise.all([api.getMe(), api.getRuns()])
+      .then(([me, res]) => {
+        setUser(me)
+        // F-18: 최신순
+        setRuns([...res.runs].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt)))
+      })
+      .catch(() => setError(true))
+  }, [])
+
+  useEffect(load, [load])
+
   return (
-    <Screen id="P-01" title="마이">
-      <p className="muted">프로필 · 러닝 기록 (#10)</p>
-    </Screen>
+    <section className="saved my">
+      <header className="saved-header">
+        <h1>마이</h1>
+      </header>
+
+      {error ? (
+        <div className="saved-empty">
+          <p>정보를 불러오지 못했어요</p>
+          <button type="button" className="secondary" onClick={load}>
+            다시 시도
+          </button>
+        </div>
+      ) : !user || !runs ? (
+        <div className="saved-loading" aria-label="불러오는 중" />
+      ) : (
+        <>
+          <section className="my-profile">
+            <span className="my-avatar" aria-hidden="true">
+              {user.nickname.slice(0, 1)}
+            </span>
+            <span className="my-profile-text">
+              <span className="my-nickname">{user.nickname}</span>
+              <span className="my-email">{user.email}</span>
+            </span>
+          </section>
+
+          <h2 className="my-section-title">러닝 기록</h2>
+          {runs.length === 0 ? (
+            <div className="saved-empty my-empty">
+              <p>아직 달린 기록이 없어요</p>
+            </div>
+          ) : (
+            <ul className="saved-list">
+              {runs.map((r) => (
+                <li key={r.runId} className="run-record">
+                  <div className="run-record-head">
+                    <span className="run-record-title">{r.title}</span>
+                    <span className="run-record-date">{formatRunDate(Date.parse(r.startedAt))}</span>
+                  </div>
+                  <dl className="run-record-stats">
+                    <div>
+                      <dt>거리</dt>
+                      <dd>
+                        <span className="number">{r.distanceKm.toFixed(2)}</span>km
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>시간</dt>
+                      <dd className="number">{formatDuration(r.durationSec * 1000)}</dd>
+                    </div>
+                    <div>
+                      <dt>평균 페이스</dt>
+                      <dd className="number">{formatPace(r.avgPaceSec > 0 ? r.avgPaceSec : null)}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
   )
 }
