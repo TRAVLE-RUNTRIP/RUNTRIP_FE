@@ -229,13 +229,19 @@ export async function mockRequest(method: string, url: string, body: unknown): P
       if (req.type === 'FREE') {
         courseId = state.nextCourseId++
         const d = new Date(req.startedAt)
+        const path = req.segments.flat()
+        const [first, last] = [path[0], path[path.length - 1]]
         state.courses.set(
           courseId,
           buildMockCourse(courseId, {
             name: `${d.getMonth() + 1}월 ${d.getDate()}일 자유 러닝 코스`,
             type: 'FREE',
             distanceKm: req.distanceKm,
-            path: req.segments.flat(),
+            estimatedMinutes: Math.round(req.durationSec / 60),
+            start: { lat: first[0], lng: first[1] },
+            end: { lat: last[0], lng: last[1] },
+            preferences: [],
+            path,
             places: [],
             safety: null,
             saved: true,
