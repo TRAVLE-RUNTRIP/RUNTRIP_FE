@@ -31,7 +31,7 @@ npm run build && npm run lint
 | `src/pages/*.tsx` | 화면 뼈대(auth, course, run, saved). 각 화면 이슈에서 채움 |
 | `src/components/` | `AppLayout`(탭 표시·세션 만료 처리), `BottomTab`, `Screen`, `PlaceCard` |
 | `vite.config.ts` | PWA 설정. Service Worker는 `/api`를 캐시하지 않음(NetworkOnly + navigateFallback 제외) |
-| `vercel.json` | `/api/*` → `https://BACKEND_DOMAIN/api/*` (EC2 도메인 확정 후 교체), 나머지 → `index.html` |
+| `vercel.json` | `/api/*` → `https://api.project03.cloud/api/*` (EC2, Caddy HTTPS), 나머지 → `index.html` |
 
 mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2는 다른 비밀번호)
 
@@ -117,7 +117,7 @@ mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2는
 
 - 핵심 목표(단계 3): **5km 순환 코스가 실제 API로 지도에 ±10%로 표시**. 코스 생성(#5, #13)은 일정이 밀려도 빼지 않아요
 - 일정이 밀리면 줄이는 순서: 안전 조언(#11) → 추천 이유(#6의 이유 부분, 개요로 대체)
-- 진행: #1 완료(`setting#1-jongwon`). Vercel 프로젝트 `runtrip_fe`(Vite 프리셋, `VITE_USE_MOCK=true`) 미리보기 배포를 Android Chrome에서 확인. 정식 주소는 develop → main 머지 후. `BACKEND_DOMAIN`은 EC2 도메인 확정 후 BE 연동(#13)에서 교체
+- 진행: #1 완료(`setting#1-jongwon`). Vercel 프로젝트 `runtrip_fe`(Vite 프리셋, `VITE_USE_MOCK=true`) 미리보기 배포를 Android Chrome에서 확인. 정식 주소는 develop → main 머지 후. 백엔드 주소는 #13에서 `api.project03.cloud`로 교체. develop 브랜치 배포 주소는 `https://runtripfe-git-develop-key00075-5426s-projects.vercel.app`(BE CORS 허용 Origin으로 전달)
 - 진행: #2 완료(`feat#2-jongwon`). Android 10 / Chrome 150에서 T map 지도·경로선·마커·현재 위치, GPS(평균 정확도 약 11m, 약 1초 갱신), Wake Lock(앱 전환 후 복귀 시 재획득) 확인. 검증 화면 `/dev/map-check`. T map 앱 키는 Vercel 환경 변수 `VITE_TMAP_APP_KEY`(Production·Preview), 허용 IP 제한 없음
 - 진행: #3 mock 기준 구현(`feat#3-jongwon`). 세션 확인은 `src/auth/session.ts`(API 2로 확인, 앱 실행 중 한 번), 보호 화면은 `RequireAuth`로 감쌈(스플래시·로그인·`/dev/map-check` 제외). mock 세션은 만료 시각을 localStorage에 저장해 새로고침 후 24시간 유지. **이슈 #3은 BE #5(EC2 배포) 후 실제 API로 새로고침 유지까지 확인하고 닫음**
 - 진행: #5 mock 기준 구현(`feat#5-jongwon`). 지도는 `src/map/CourseMap.tsx`(경로선·출발/도착·번호 마커, T map 실패 시 경로 모양 그림으로 대체, #7·#9에서 재사용). 조건 입력 → 생성 중은 `replace`로 이동해 결과에서 뒤로가기 = 홈. 다시 만들기는 결과 화면 state의 `request.excludedCombos`에 지금 조합(placeId 순서대로)을 더해 보냄. mock 실패 확인: 목표 거리 13km `NO_PLACES`, 17km `GENERATION_TIMEOUT`, 19km `SERVER_ERROR`, 다시 만들기 3번이면 `NO_MORE_COURSES`. 실패 문구 일부는 기능명세서에 없어 임시(`course.tsx` `failureCopy`)
