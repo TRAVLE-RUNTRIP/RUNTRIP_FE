@@ -1,4 +1,4 @@
-// M-20 카운트다운, M-21 러닝 측정 (#7, 기능명세서 F-10·F-11·F-12·F-08). M-22 러닝 완료는 #8.
+// M-20 카운트다운, M-21 러닝 측정 (#7, 기능명세서 F-10·F-11·F-12·F-08), M-22 러닝 완료 (#8, F-13).
 // 측정 기록은 lib/runTracker.ts가 계산하고 기기에 저장해요. 측정 중에는 API를 부르지 않아요 (러닝 시작 전 코스 조회만).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
@@ -7,7 +7,6 @@ import { api } from '../api/endpoints'
 import type { RunType } from '../api/types'
 import locationIcon from '../assets/icons/location.svg'
 import { PlaceCard, placeCardSearch } from '../components/PlaceCard'
-import { Screen } from '../components/Screen'
 import { setFakeRoute } from '../lib/fakeGps'
 import { distanceM } from '../lib/geo'
 import {
@@ -23,15 +22,18 @@ import {
   formatKm,
   formatMeters,
   formatPace,
+  formatRunDate,
   GAP_SPLIT_MS,
   interruptRun,
   loadDraft,
   newlyVisited,
   nextPlace,
   pauseRun,
+  pointCount,
   resumeRun,
   routePointOf,
   saveDraft,
+  toSaveRunRequest,
   type RunCourse,
   type RunDraft,
 } from '../lib/runTracker'
@@ -63,7 +65,7 @@ const GEO_BLOCK_TEXT: Partial<Record<GeoError, { title: string; desc: string }>>
   },
 }
 
-const toRunCourse = ({ courseId, name, type, distanceKm, start, end, path, places }: RunCourse): RunCourse => ({
+const toRunCourse = ({ courseId, name, type, distanceKm, start, end, path, places, saved }: RunCourse): RunCourse => ({
   courseId,
   name,
   type,
@@ -72,6 +74,7 @@ const toRunCourse = ({ courseId, name, type, distanceKm, start, end, path, place
   end,
   path,
   places,
+  saved,
 })
 
 // ---- M-20 카운트다운 ----
@@ -436,31 +439,134 @@ function HoldToEnd({ onDone }: { onDone: () => void }) {
   )
 }
 
-// ---- M-22 러닝 완료 (#8에서 구현) ----
+// ---- M-22 러닝 완료 (#8, 기능명세서 F-13) ----
 
 export function RunCompletePage() {
-  const navigate = useNavigate()
   const draft = useMemo(loadDraft, [])
   if (!draft) return <Navigate to={PATHS.home} replace />
+  // 측정이 끝나지 않은 기록은 측정 화면에서 마저 끝내요.
+  if (draft.status !== 'finished') return <Navigate to={PATHS.run} replace />
+  return <RunComplete draft={draft} />
+}
 
-  // #8 전까지 임시: 결과만 보여주고, [저장 안 함]으로 기기 기록을 지워요.
+function saveErrorText(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.code === 'NETWORK_ERROR') return '네트워크 연결을 확인해 주세요. 기록은 기기에 남아 있어요.'
+    if (error.code === 'VALIDATION_ERROR') return error.message
+  }
+  return '기록을 저장하지 못했어요. 기록은 기기에 남아 있어요.'
+}
+
+function RunComplete({ draft }: { draft: RunDraft }) {
+  const navigate = useNavigate()
+  const course = draft.course
+  const isCourse = draft.type === 'COURSE' && course !== null
+  // F-13: 코스 러닝은 "이 코스도 저장하기"(기본 켜짐, 이미 저장한 코스면 숨김), 자유 러닝은 "이 경로를 코스로 저장하기"(기본 꺼짐)
+  const showCheckbox = !(isCourse && course.saved)
+  const [saveCourse, setSaveCourse] = useState(isCourse && !course.saved)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const end = draft.endedAtMs ?? draft.updatedAtMs
+  // 자유 러닝 경로로 코스를 만들려면 점이 2개 이상 있어야 해요 (BE 검증).
+  const tooShortForCourse = !isCourse && pointCount(draft) < 2
+
+  const save = async () => {
+    if (saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      // runId는 기록을 만들 때 정해져 있어서 다시 시도해도 같아요 (중복 저장 방지).
+      const res = await api.saveRun(toSaveRunRequest(draft, saveCourse && !tooShortForCourse))
+      clearDraft()
+      navigate(res.courseSaved ? PATHS.savedCourses : PATHS.my, { replace: true })
+    } catch (err) {
+      // 실패하면 기기에 그대로 두고 [다시 시도]를 보여줘요. 세션 만료면 로그인 뒤 이 화면으로 돌아와요.
+      setError(saveErrorText(err))
+      setSaving(false)
+    }
+  }
+
+  // [저장 안 함]: API 호출 없이 기기 기록을 지우고 홈으로
   const discard = () => {
     clearDraft()
     navigate(PATHS.home, { replace: true })
   }
-  const end = draft.endedAtMs ?? Date.now()
 
   return (
-    <Screen id="M-22" title="러닝 완료">
-      <p className="muted">
-        {draft.course ? draft.course.name : '자유 러닝'} · {formatKm(draft.distanceM)}km · {formatDuration(elapsedMsAt(draft, end))} · 평균{' '}
-        {formatPace(avgPaceSec(draft, end))}
-        {draft.course && ` · 방문 ${draft.visitedPlaceIds.length}곳`}
-      </p>
-      <p className="muted">기록 저장·코스 저장 체크박스·미저장 기록 복구는 #8에서 붙여요.</p>
-      <button type="button" className="secondary block-button" onClick={discard}>
-        저장 안 함
-      </button>
-    </Screen>
+    <section className="run-complete">
+      <header className="run-complete-header">
+        <p className="run-complete-date">{formatRunDate(draft.startedAtMs)}</p>
+        <h1 className="run-complete-title">{isCourse ? course.name : '자유 러닝'}</h1>
+      </header>
+
+      <div className="run-complete-map">
+        <RunMap
+          course={course}
+          segments={draft.segments}
+          current={null}
+          visitedPlaceIds={draft.visitedPlaceIds}
+          follow={false}
+          recenterKey={0}
+          fitTrack
+          failedText="지도를 불러오지 못했어요"
+        />
+      </div>
+
+      <div className="run-complete-body">
+        <div className="run-distance">
+          <span className="number">{formatKm(draft.distanceM)}</span>
+          <span className="run-distance-unit">km</span>
+        </div>
+        <dl className="run-stats">
+          <div>
+            <dt>시간</dt>
+            <dd className="number">{formatDuration(elapsedMsAt(draft, end))}</dd>
+          </div>
+          <div>
+            <dt>평균 페이스</dt>
+            <dd className="number">{formatPace(avgPaceSec(draft, end))}</dd>
+          </div>
+          {isCourse && (
+            <div>
+              <dt>방문 장소</dt>
+              <dd>
+                <span className="number">{draft.visitedPlaceIds.length}</span>/{course.places.length}곳
+              </dd>
+            </div>
+          )}
+        </dl>
+
+        {showCheckbox && (
+          <label className={`check-row${tooShortForCourse ? ' disabled' : ''}`}>
+            <input
+              type="checkbox"
+              checked={saveCourse && !tooShortForCourse}
+              disabled={tooShortForCourse || saving}
+              onChange={(e) => setSaveCourse(e.target.checked)}
+            />
+            <span>
+              {isCourse ? '이 코스도 저장하기' : '이 경로를 코스로 저장하기'}
+              {tooShortForCourse && <small>달린 경로가 짧아 코스로 저장할 수 없어요</small>}
+            </span>
+          </label>
+        )}
+
+        {error && (
+          <p className="field-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+
+      <div className="bottom-action button-pair">
+        <button type="button" className="secondary block-button" onClick={discard} disabled={saving}>
+          저장 안 함
+        </button>
+        <button type="button" className="primary block-button" onClick={() => void save()} disabled={saving}>
+          {saving ? '저장 중…' : error ? '다시 시도' : '기록 저장'}
+        </button>
+      </div>
+    </section>
   )
 }

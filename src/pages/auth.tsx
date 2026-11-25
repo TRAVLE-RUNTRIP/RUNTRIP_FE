@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { ApiError, USE_MOCK } from '../api/client'
 import { api } from '../api/endpoints'
 import { checkSession, markLoggedIn } from '../auth/session'
+import { pendingRunPath } from '../lib/runTracker'
 import { PATHS } from '../routes/paths'
 
 /** 스플래시를 최소한 이만큼은 보여줘요. 세션 확인이 더 늦으면 그만큼 기다려요. */
@@ -16,9 +17,9 @@ export function SplashPage() {
     let cancelled = false
     const minDelay = new Promise((resolve) => setTimeout(resolve, SPLASH_MIN_MS))
     // 세션이 살아 있으면(새로고침·앱 다시 열기) 로그인을 건너뛰어요.
-    // TODO(#8): 기기에 미저장 러닝 기록이 있으면 러닝 완료(M-22)로 보내기
+    // 기기에 미저장 러닝 기록이 있으면 홈 대신 그 기록으로 가요 (F-13, #8).
     Promise.all([checkSession(), minDelay]).then(([status]) => {
-      if (!cancelled) navigate(status === 'ok' ? PATHS.home : PATHS.login, { replace: true })
+      if (!cancelled) navigate(status === 'ok' ? (pendingRunPath() ?? PATHS.home) : PATHS.login, { replace: true })
     })
     return () => {
       cancelled = true
@@ -61,8 +62,8 @@ export function LoginPage() {
     try {
       await api.login({ email: email.trim(), password })
       markLoggedIn()
-      // TODO(#8): 기기에 미저장 러닝 기록이 있으면 러닝 완료(M-22)로 보내기
-      navigate(PATHS.home, { replace: true })
+      // F-13: 기기에 미저장 러닝 기록이 있으면 홈 대신 러닝 완료(측정 중이던 기록은 측정 화면)로 가요.
+      navigate(pendingRunPath() ?? PATHS.home, { replace: true })
     } catch (err) {
       setError(loginErrorMessage(err))
       setLoading(false)

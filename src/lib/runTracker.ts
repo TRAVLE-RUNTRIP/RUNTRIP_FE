@@ -1,6 +1,7 @@
 // 러닝 측정 기록 (#7, 기능명세서 F-11·F-12). 화면과 상관없는 계산만 모았어요.
 // 기록은 기기(localStorage)에 계속 저장해서 새로고침·앱 종료 뒤에도 이어가거나 완료 화면(#8)에서 쓸 수 있어요.
-import type { Course, LatLng, PathPoint, RunType } from '../api/types'
+import type { Course, LatLng, PathPoint, RunType, SaveRunRequest } from '../api/types'
+import { PATHS } from '../routes/paths'
 import { distanceM } from './geo'
 import type { GeoSample } from './useGeoWatch'
 
@@ -19,8 +20,10 @@ const PACE_WINDOW_MS = 30_000
 
 export type RunStatus = 'running' | 'paused' | 'finished'
 
-/** 러닝 화면에서 쓰는 코스 정보 (API 9 응답 중 필요한 것만) */
-export type RunCourse = Pick<Course, 'courseId' | 'name' | 'type' | 'distanceKm' | 'start' | 'end' | 'path' | 'places'>
+/** 러닝 화면에서 쓰는 코스 정보 (API 9 응답 중 필요한 것만). saved는 #8 완료 화면의 체크박스에 써요. */
+export type RunCourse = Pick<Course, 'courseId' | 'name' | 'type' | 'distanceKm' | 'start' | 'end' | 'path' | 'places'> & {
+  saved?: boolean
+}
 
 export interface RunDraft {
   version: 1
@@ -212,7 +215,61 @@ export function clearDraft(): void {
   }
 }
 
+/**
+ * 로그인·앱 시작 뒤 기기에 남은 러닝 기록이 있으면 갈 화면 (F-13).
+ * 끝난 기록은 완료 화면(M-22), 측정 중이던 기록은 측정 화면(M-21, 일시정지로 열려요)으로 가요.
+ */
+export function pendingRunPath(): string | null {
+  const d = loadDraft()
+  if (!d) return null
+  return d.status === 'finished' ? PATHS.runComplete : PATHS.run
+}
+
+// ---- 기록 저장 (API 11) ----
+
+/** 한국 시간 ISO 8601 (2026-11-25T19:30:00+09:00) */
+export function toKstIso(ms: number): string {
+  return new Date(ms + 9 * 3600_000).toISOString().slice(0, 19) + '+09:00'
+}
+
+/** 경로 점 수 (자유 러닝을 코스로 저장하려면 2개 이상이어야 해요, BE 검증) */
+export const pointCount = (d: RunDraft) => d.segments.reduce((sum, seg) => sum + seg.length, 0)
+
+/** 화면에 보여준 값과 같은 기준(거리는 10m 단위 내림, 시간은 초)으로 저장 요청을 만들어요. */
+export function toSaveRunRequest(d: RunDraft, saveCourse: boolean): SaveRunRequest {
+  const end = d.endedAtMs ?? d.updatedAtMs
+  const durationSec = Math.round(elapsedMsAt(d, end) / 1000)
+  const distanceKm = Math.floor(d.distanceM / 10) / 100
+  return {
+    runId: d.runId,
+    type: d.type,
+    courseId: d.course?.courseId ?? null,
+    title: d.course?.name ?? '자유 러닝',
+    startedAt: toKstIso(d.startedAtMs),
+    // 종료 시각은 시작보다 뒤여야 해요 (BE 검증).
+    endedAt: toKstIso(Math.max(end, d.startedAtMs + 1000)),
+    distanceKm,
+    durationSec,
+    avgPaceSec: distanceKm > 0 ? Math.round(durationSec / distanceKm) : 0,
+    visitedPlaceIds: d.type === 'COURSE' ? d.visitedPlaceIds : [],
+    segments: d.segments,
+    saveCourse,
+  }
+}
+
 // ---- 표시 ----
+
+/** 11월 25일 (수) 오후 7:30 */
+const RUN_DATE_FORMAT = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  month: 'long',
+  day: 'numeric',
+  weekday: 'short',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+export const formatRunDate = (ms: number) => RUN_DATE_FORMAT.format(new Date(ms))
 
 /** 3:05, 1:02:09 */
 export function formatDuration(ms: number): string {

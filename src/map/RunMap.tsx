@@ -43,9 +43,23 @@ interface RunMapProps {
   /** 값이 바뀌면 지금 위치로 바로 옮겨요 ([내 위치로]). */
   recenterKey: number
   onPlaceClick?: (placeId: string) => void
+  /** 켜져 있으면 달린 경로(코스 러닝은 코스까지)가 한 화면에 들어오게 맞춰요 (M-22). */
+  fitTrack?: boolean
+  /** 지도를 못 불러왔을 때 문구 */
+  failedText?: string
 }
 
-export function RunMap({ course, segments, current, visitedPlaceIds, follow, recenterKey, onPlaceClick }: RunMapProps) {
+export function RunMap({
+  course,
+  segments,
+  current,
+  visitedPlaceIds,
+  follow,
+  recenterKey,
+  onPlaceClick,
+  fitTrack = false,
+  failedText = '지도를 불러오지 못했어요. 측정은 계속돼요.',
+}: RunMapProps) {
   const mapId = `run-map-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   const tmap = useRef<TmapNamespace | null>(null)
   const map = useRef<TmapMap | null>(null)
@@ -150,7 +164,16 @@ export function RunMap({ course, segments, current, visitedPlaceIds, follow, rec
         map: m,
       })
     })
-  }, [ready, segments])
+
+    if (fitTrack) {
+      const points = [...segments.flat(), ...(course?.path ?? [])]
+      if (points.length > 0) {
+        const bounds = new T.LatLngBounds()
+        points.forEach(([lat, lng]) => bounds.extend(new T.LatLng(lat, lng)))
+        m.fitBounds(bounds)
+      }
+    }
+  }, [ready, segments, fitTrack, course])
 
   // 내 위치와 따라가기
   useEffect(() => {
@@ -176,7 +199,7 @@ export function RunMap({ course, segments, current, visitedPlaceIds, follow, rec
   if (failed) {
     return (
       <div className="run-map run-map-failed">
-        <p>지도를 불러오지 못했어요. 측정은 계속돼요.</p>
+        <p>{failedText}</p>
       </div>
     )
   }
