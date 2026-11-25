@@ -48,6 +48,8 @@ export async function request<T>(method: Method, path: string, options: RequestO
   let body: RsData<T> | null
 
   if (USE_MOCK) {
+    // 개발자 도구에서 Offline으로 바꾸면 mock도 실제처럼 네트워크 오류를 내요 (#8 저장 실패 확인용).
+    if (!navigator.onLine) throw new ApiError('NETWORK_ERROR', '네트워크 연결을 확인해 주세요.', 0)
     const res = await mockRequest(method, url, options.body)
     status = res.status
     body = res.body as RsData<T> | null

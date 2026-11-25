@@ -1595,3 +1595,82 @@ a.block-button {
 .run-end span {
   position: relative;
 }
+
+/* M-22 러닝 완료 (#8) */
+.run-complete {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.run-complete-header {
+  padding: calc(20px + env(safe-area-inset-top)) 20px 12px;
+}
+
+.run-complete-date {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.run-complete-title {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.run-complete-map {
+  position: relative;
+  flex: none;
+  height: 34dvh;
+  min-height: 220px;
+}
+
+.run-complete-body {
+  flex: 1;
+  padding: 20px 20px 8px;
+}
+
+.run-complete-body .run-stats {
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  grid-auto-columns: 1fr;
+}
+
+.check-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.check-row input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  padding: 0;
+  accent-color: var(--color-accent);
+}
+
+.check-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.check-row small {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.check-row.disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
