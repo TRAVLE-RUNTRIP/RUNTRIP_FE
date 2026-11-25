@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { api } from '../api/endpoints'
-import type { Course, CourseType, CreateCourseRequest, ErrorCode } from '../api/types'
+import type { Course, CoursePlace, CourseType, CreateCourseRequest, ErrorCode } from '../api/types'
 import backIcon from '../assets/icons/back.svg'
 import chevronRightIcon from '../assets/icons/chevron-right.svg'
 import { PlaceCard, placeCardSearch } from '../components/PlaceCard'
-import { useCourseReasons } from '../lib/useCourseReasons'
+import { useCourseReasons, type ReasonStatus } from '../lib/useCourseReasons'
 import { CourseMap } from '../map/CourseMap'
 import { PATHS, toCourseResult } from '../routes/paths'
 import { PREFERENCES, type CourseDraft, type CourseGeneratingState } from './courseNew'
@@ -50,14 +50,14 @@ function failureCopy(error: ApiError): FailureCopy {
   return map[error.code] ?? { title: '코스를 만들지 못했어요', desc: '잠시 후 다시 시도해 주세요.', retry: true }
 }
 
-function formatMinutes(min: number): string {
+export function formatMinutes(min: number): string {
   if (min < 60) return `${min}분`
   const h = Math.floor(min / 60)
   const m = min % 60
   return m === 0 ? `${h}시간` : `${h}시간 ${m}분`
 }
 
-const preferenceLabel = (value: string) => PREFERENCES.find((p) => p.value === value)?.label ?? value
+export const preferenceLabel = (value: string) => PREFERENCES.find((p) => p.value === value)?.label ?? value
 
 /** 요청한 조건 요약 (생성 중·실패 화면) */
 function RequestSummary({ request, draft }: { request: CreateCourseRequest; draft: CourseDraft | undefined }) {
@@ -375,34 +375,7 @@ export function CourseResultPage() {
           {request && <p className="field-hint">목표 {request.targetKm}km로 만든 코스예요</p>}
         </section>
 
-        <section className="course-places-section">
-          <h3>경유 장소</h3>
-          <ol className="course-places">
-            {places.map((p) => {
-              // F-05: 추천 이유 → 없으면 장소 개요 → 개요도 없으면 이름·분류만
-              const line = p.reason ?? (reasonStatus === 'done' ? p.overview : null)
-              return (
-                <li key={p.placeId}>
-                  <Link className="course-place" to={placeCardSearch(p.placeId)}>
-                    <span className="course-place-order">{p.order}</span>
-                    <span className="course-place-text">
-                      <span className="course-place-name">{p.name}</span>
-                      <span className="course-place-category">{p.category}</span>
-                      {line ? (
-                        <span className="course-place-reason">{line}</span>
-                      ) : (
-                        reasonStatus === 'loading' && (
-                          <span className="course-place-reason course-place-reason-loading">추천 이유를 불러오고 있어요</span>
-                        )
-                      )}
-                    </span>
-                    <img src={chevronRightIcon} width={18} height={18} alt="" />
-                  </Link>
-                </li>
-              )
-            })}
-          </ol>
-        </section>
+        <CoursePlaceList places={places} reasonStatus={reasonStatus} />
 
         {regenerate && (
           <button type="button" className="outline-button" onClick={regenerate}>
@@ -426,6 +399,40 @@ export function CourseResultPage() {
       </div>
 
       <PlaceCard places={places} reasonStatus={reasonStatus} />
+    </section>
+  )
+}
+
+/** 경유 장소 목록 (결과 M-12·상세 C-03 공용). F-05: 추천 이유 → 없으면 장소 개요 → 개요도 없으면 이름·분류만 */
+export function CoursePlaceList({ places, reasonStatus }: { places: CoursePlace[]; reasonStatus: ReasonStatus }) {
+  return (
+    <section className="course-places-section">
+      <h3>경유 장소</h3>
+      <ol className="course-places">
+        {places.map((p) => {
+          // F-05: 추천 이유 → 없으면 장소 개요 → 개요도 없으면 이름·분류만
+          const line = p.reason ?? (reasonStatus === 'done' ? p.overview : null)
+          return (
+            <li key={p.placeId}>
+              <Link className="course-place" to={placeCardSearch(p.placeId)}>
+                <span className="course-place-order">{p.order}</span>
+                <span className="course-place-text">
+                  <span className="course-place-name">{p.name}</span>
+                  <span className="course-place-category">{p.category}</span>
+                  {line ? (
+                    <span className="course-place-reason">{line}</span>
+                  ) : (
+                    reasonStatus === 'loading' && (
+                      <span className="course-place-reason course-place-reason-loading">추천 이유를 불러오고 있어요</span>
+                    )
+                  )}
+                </span>
+                <img src={chevronRightIcon} width={18} height={18} alt="" />
+              </Link>
+            </li>
+          )
+        })}
+      </ol>
     </section>
   )
 }

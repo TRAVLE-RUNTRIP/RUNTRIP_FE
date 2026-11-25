@@ -125,6 +125,7 @@ mock 로그인: `test@runtrip.test` / `runtrip1234` (로컬·mock 전용. EC2 �
 - 진행: #3 완료. develop 배포(`VITE_USE_MOCK=false`)에서 실제 API 로그인·실패 문구·새로고침 유지 확인
 - 진행: #7 구현(`feat#7-jongwon`). 측정 계산·기기 저장은 `src/lib/runTracker.ts`(`RunDraft`, localStorage `runtrip:run-draft`, `runId`는 앱이 만든 UUID — #8에서 그대로 API 11에 씀), 지도는 `src/map/RunMap.tsx`. 카운트다운은 끝나지 않은 기록이 있으면 새로 시작하지 않고 M-21(측정 중)·M-22(종료됨)로 보냄. 새로고침·재실행 시 마지막 저장 시각 이후는 빼고 일시정지로 열림. 출발점 안내 기준 100m와 문구는 기능명세서에 없어 임시. M-22는 #8 전까지 요약·[저장 안 함]만 있는 임시 화면. PC 확인용 가짜 GPS: `npm run dev`에서 주소에 `?fakegps`(끄기 `?fakegps=off`). 휴대폰은 https가 필요해 Vercel 미리보기로 확인(자유 러닝 실기기 확인 완료)
 - 진행: #8 구현(`feat#8-jongwon`). M-22는 `run.tsx` `RunComplete`. 저장 요청은 `runTracker.ts` `toSaveRunRequest`(한국 시간 ISO, 정수 초, 거리 10m 단위 내림, 자유 러닝 제목 "자유 러닝", 종료 시각은 시작+1초 이상 — BE 검증 규칙). 자유 러닝 경로 점이 2개 미만이면 코스 저장 체크박스를 막음. 저장 성공 시에만 기기 기록 삭제, 실패 시 [다시 시도](같은 runId). 스플래시·로그인 뒤 `pendingRunPath()`로 끝난 기록은 M-22, 측정 중이던 기록은 M-21로. mock도 `navigator.onLine`이 false면 `NETWORK_ERROR`(개발자 도구 Offline으로 확인). 저장 실패 문구는 기능명세서에 없어 임시
+- 진행: #9 구현(`feat#9-jongwon`). C-02·C-03은 `saved.tsx`, 삭제 확인 창은 `src/components/ConfirmDialog.tsx`, 경유 장소 목록은 `course.tsx` `CoursePlaceList`(결과·상세 공용). [삭제]는 기능명세서 F-15대로 상세에만(목록에서 바로 삭제는 없음). 상세의 안전 지수는 #11. 자유 러닝 코스는 경유 장소 영역을 숨기고 경로선만. mock 자유 러닝 코스의 출발·도착을 경로 처음·끝으로 맞춤. 확인 창 문구는 기능명세서에 없어 임시
 - 결정: 안전도에 보행 환경(`walk_score`, `walk_segments`, 보행 경고)을 추가하는 AI 쪽 요청대로 진행하기로 함. #11에서 반영하고, 노션 API 명세 B4·A-5가 고쳐지면 필드 이름과 구간 형식을 맞춤
 
 ## 러닝 측정 기준 (#2 실측, #7에서 적용)
