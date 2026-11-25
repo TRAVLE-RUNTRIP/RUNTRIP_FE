@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { isFakeGps, startFakeWatch } from './fakeGps'
 
 export interface GeoSample {
   lat: number
@@ -22,6 +23,7 @@ export function useGeoWatch(enabled: boolean, onSample: (sample: GeoSample) => v
 
   useEffect(() => {
     if (!enabled) return
+    if (isFakeGps()) return startFakeWatch(onSample) // 개발용 (#7)
     if (!('geolocation' in navigator)) {
       setError('unsupported')
       return
