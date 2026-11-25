@@ -1823,3 +1823,109 @@ a.block-button {
   color: #fff;
   font-weight: 700;
 }
+
+/* P-01 마이 (#10) */
+.my-profile {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--color-info-bg);
+}
+
+.my-avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.my-profile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.my-nickname {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.my-email {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-section-title {
+  margin: 28px 0 12px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.my-empty {
+  padding: 40px 0;
+}
+
+.run-record {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.run-record-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.run-record-title {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-record-date {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.run-record-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 12px 0 0;
+}
+
+.run-record-stats div + div {
+  padding-left: 12px;
+  border-left: 1px solid var(--color-border);
+}
+
+.run-record-stats dt {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.run-record-stats dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.run-record-stats .number {
+  font-family: var(--font-number);
+  font-size: 18px;
+  font-weight: 700;
+}
