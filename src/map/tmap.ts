@@ -49,6 +49,8 @@ export interface TmapNamespace {
     label?: string
     icon?: string
     iconSize?: unknown
+    /** 아이콘의 어느 점을 좌표에 맞출지. 기본은 아래 가운데, 'center'면 아이콘 가운데 */
+    anchor?: 'center' | 'top' | 'bottom' | 'left' | 'right'
   }) => TmapMarker
   Circle: new (options: {
     center: TmapLatLng
