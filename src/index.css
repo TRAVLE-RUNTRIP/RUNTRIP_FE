@@ -1298,6 +1298,216 @@ a.block-button {
   font-weight: 700;
 }
 
+/* 안전 조언 박스 (#11, F-06) */
+.safety-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg);
+}
+
+.safety-section h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.safety-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.safety-time {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-info-bg);
+  color: var(--color-accent-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.safety-time-night {
+  background: var(--color-inverse);
+  color: #fff;
+}
+
+.safety-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.safety-score-value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.safety-score-value .number {
+  margin-right: 2px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.safety-score-empty {
+  color: var(--color-muted);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.safety-level {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.safety-level-good {
+  background: #dcf5e6;
+  color: #1d6b3d;
+}
+
+.safety-level-normal {
+  background: #fdf1cc;
+  color: #7a5a00;
+}
+
+.safety-level-caution {
+  background: #fde2dd;
+  color: #a8301c;
+}
+
+.safety-ratio {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+.safety-ratio div {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--color-info-bg);
+}
+
+.safety-ratio dt {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.safety-ratio dd {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.safety-toggle {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.safety-toggle[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.safety-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.safety-warnings li {
+  position: relative;
+  padding-left: 14px;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.safety-warnings li::before {
+  content: '';
+  position: absolute;
+  top: 0.55em;
+  left: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e0472f;
+}
+
+/* 야간에는 안내 문구를 경고 상자로 강조해요 */
+.safety-warnings-night {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff1ee;
+}
+
+.safety-more {
+  align-self: flex-start;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.safety-pending {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 15px;
+}
+
+.safety-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+/* 지도 왼쪽 위 안전 등급 범례 (아래쪽은 결과 시트가 겹쳐요) */
+.safety-legend {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.95);
+  box-shadow: 0 2px 8px rgb(16 36 27 / 0.12);
+  color: var(--color-text);
+  font-size: 11px;
+  list-style: none;
+  pointer-events: none;
+}
+
+.safety-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.safety-legend-swatch {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+}
+
 .course-places {
   margin: 0;
   padding: 0;

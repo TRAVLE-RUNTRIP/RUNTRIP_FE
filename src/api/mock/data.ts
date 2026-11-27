@@ -1,6 +1,6 @@
 // API 명세 예시를 바탕으로 만든 mock 데이터예요. 실제 장소·경로가 아니에요.
 import { distanceM } from '../../lib/geo'
-import type { Course, CoursePlace, LatLng, LocationResult, PathPoint, User } from '../types'
+import type { Course, CoursePlace, LatLng, LocationResult, PathPoint, Safety, User } from '../types'
 
 export const MOCK_USER: User = { userId: 1, nickname: '테스트러너', email: 'test@runtrip.test' }
 export const MOCK_PASSWORD = 'runtrip1234'
@@ -78,8 +78,9 @@ export function buildMockCourse(courseId: number, overrides: Partial<Course> = {
     preferences: ['NIGHT_VIEW', 'NATURE'],
     path: LOOP_PATH,
     places: MOCK_PLACES.map((p) => ({ ...p })),
+    // 실제 /safety 응답 형식(#11에서 확인)에 맞춘 값이에요. timeBand와 야간 경고는 응답할 때 지금 시각으로 바꿔요.
     safety: {
-      timeBand: 'NIGHT',
+      timeBand: 'DAY',
       score: 81,
       level: '좋음',
       coverage: 0.59,
@@ -89,11 +90,39 @@ export function buildMockCourse(courseId: number, overrides: Partial<Course> = {
         { fromIndex: 0, toIndex: 4, grade: '적음' },
         { fromIndex: 4, toIndex: 11, grade: '큰길(조명 추정)' },
       ],
-      warnings: ['밤에는 확인된 가로등이 적은 구간이 있어요. 밝은 옷과 라이트를 챙기세요'],
+      warnings: ['0.0~0.6km 구간(600m)은 확인된 가로등이 적어요'],
     },
     saved: false,
     savedAt: null,
     ...overrides,
+  }
+}
+
+/** 야간 경고 (API 명세 A-4 예시 문구) */
+export const MOCK_NIGHT_WARNING = '밤에는 확인된 가로등이 적은 구간이 있어요. 밝은 옷과 라이트를 챙기세요'
+
+/** 응답 시각의 시간대로 바꿔요. 주간·야간 점수는 같고 야간에는 낮은 구간이 있을 때 경고만 더해요 (F-06). */
+export function safetyAt(safety: Safety | null, night: boolean): Safety | null {
+  if (!safety) return null
+  const warnings = safety.warnings.filter((w) => w !== MOCK_NIGHT_WARNING)
+  return {
+    ...safety,
+    timeBand: night ? 'NIGHT' : 'DAY',
+    warnings: night && safety.hasLowSegment ? [MOCK_NIGHT_WARNING, ...warnings] : warnings,
+  }
+}
+
+/** 보안등 자료가 없는 구만 지나는 코스 (score가 null) */
+export function noDataSafety(pathLength: number): Safety {
+  return {
+    timeBand: 'DAY',
+    score: null,
+    level: null,
+    coverage: 0,
+    estimated: 0,
+    hasLowSegment: false,
+    segments: [{ fromIndex: 0, toIndex: pathLength - 1, grade: '자료없음' }],
+    warnings: ['일부 구간은 가로등 자료가 없어 안전 정보를 표시하지 않아요'],
   }
 }
 

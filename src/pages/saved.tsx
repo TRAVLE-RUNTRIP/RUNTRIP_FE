@@ -8,6 +8,7 @@ import backIcon from '../assets/icons/back.svg'
 import chevronRightIcon from '../assets/icons/chevron-right.svg'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { PlaceCard, placeCardSearch } from '../components/PlaceCard'
+import { SafetySection } from '../components/SafetySection'
 import { formatDuration, formatPace, formatRunDate } from '../lib/runTracker'
 import { useCourseReasons } from '../lib/useCourseReasons'
 import { CourseMap } from '../map/CourseMap'
@@ -98,6 +99,8 @@ export function CourseDetailPage() {
   const { course, error } = useCourse(courseId)
   const { places, status: reasonStatus } = useCourseReasons(course)
   const [confirming, setConfirming] = useState(false)
+  // F-06: [구간 색 보기]를 켜면 지도 경로선을 안전 등급 색으로 바꿔요.
+  const [showSafety, setShowSafety] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -176,6 +179,7 @@ export function CourseDetailPage() {
         end={course.end}
         type={course.type}
         onPlaceClick={(placeId) => navigate({ search: placeCardSearch(placeId) })}
+        safetySegments={showSafety ? course.safety?.segments : null}
       />
 
       <div className="course-result-body">
@@ -208,7 +212,10 @@ export function CourseDetailPage() {
           </dl>
         </section>
 
-        {/* 자유 러닝 코스(FREE)는 경유 장소 없이 경로선만 보여줘요. 안전 지수(F-15)는 #11에서 붙여요. */}
+        {/* F-15: 지금 시간대 기준 안전 지수 (서버가 상세 조회 때 다시 계산해요). [다른 코스 만들기]는 결과 화면에만 있어요. */}
+        <SafetySection safety={course.safety} showSegments={showSafety} onToggleSegments={() => setShowSafety((v) => !v)} />
+
+        {/* 자유 러닝 코스(FREE)는 경유 장소 없이 경로선만 보여줘요. */}
         {places.length > 0 && <CoursePlaceList places={places} reasonStatus={reasonStatus} />}
       </div>
 
