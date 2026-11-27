@@ -1,4 +1,4 @@
-// M-11 생성 중·실패, M-12 코스 결과 (#5, 기능명세서 F-03·F-04·F-07·F-09). 추천 이유·장소 카드는 #6(F-05·F-08), 안전 조언은 #11.
+// M-11 생성 중·실패, M-12 코스 결과 (#5, 기능명세서 F-03·F-04·F-07·F-09). 추천 이유·장소 카드는 #6(F-05·F-08), 안전 조언은 #11(F-06).
 // M-00 홈은 home.tsx, M-10 조건 입력은 courseNew.tsx
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -8,6 +8,7 @@ import type { Course, CoursePlace, CourseType, CreateCourseRequest, ErrorCode } 
 import backIcon from '../assets/icons/back.svg'
 import chevronRightIcon from '../assets/icons/chevron-right.svg'
 import { PlaceCard, placeCardSearch } from '../components/PlaceCard'
+import { SafetySection } from '../components/SafetySection'
 import { useCourseReasons, type ReasonStatus } from '../lib/useCourseReasons'
 import { CourseMap } from '../map/CourseMap'
 import { PATHS, toCourseResult } from '../routes/paths'
@@ -255,6 +256,8 @@ export function CourseResultPage() {
   const { places, status: reasonStatus } = useCourseReasons(course)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // F-06: [구간 색 보기]를 켜면 지도 경로선을 안전 등급 색으로 바꿔요.
+  const [showSafety, setShowSafety] = useState(false)
 
   // F-04: 뒤로가기는 확인 없이 홈으로 (저장하지 않은 코스는 사라져요).
   const goHome = () => navigate(PATHS.home)
@@ -341,6 +344,7 @@ export function CourseResultPage() {
         end={course.end}
         type={course.type}
         onPlaceClick={(placeId) => navigate({ search: placeCardSearch(placeId) })}
+        safetySegments={showSafety ? course.safety?.segments : null}
       />
 
       <div className="course-result-body">
@@ -374,6 +378,13 @@ export function CourseResultPage() {
           </dl>
           {request && <p className="field-hint">목표 {request.targetKm}km로 만든 코스예요</p>}
         </section>
+
+        <SafetySection
+          safety={course.safety}
+          showSegments={showSafety}
+          onToggleSegments={() => setShowSafety((v) => !v)}
+          onRegenerate={regenerate ?? undefined}
+        />
 
         <CoursePlaceList places={places} reasonStatus={reasonStatus} />
 

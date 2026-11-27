@@ -1,10 +1,12 @@
 // 코스 지도: 경로선, 출발·도착, 경유 장소 번호 마커 (#5). 코스 상세(#9)·러닝(#7)에서도 같은 지도를 써요.
 // T map을 불러오지 못하면(앱 키 없음, 네트워크 오류) 경로 모양만 그린 그림으로 대신 보여줘요.
 // 경로선 위에 진행 방향 화살표(>)를 얹고, 지도를 누르면 전체 화면으로 크게 볼 수 있어요.
+// 안전 조언(#11)의 [구간 색 보기]를 켜면 경로선을 등급별 색으로 바꿔 그려요.
 import { useEffect, useId, useRef, useState } from 'react'
-import type { CoursePlace, CourseType, LatLng, PathPoint } from '../api/types'
+import type { CoursePlace, CourseType, LatLng, PathPoint, Safety } from '../api/types'
 import { distanceM } from '../lib/geo'
-import { loadTmap, type TmapMap } from './tmap'
+import { gradesInUse, safetyGradeColor } from '../lib/safety'
+import { loadTmap, type TmapMap, type TmapNamespace, type TmapOverlay } from './tmap'
 
 const ROUTE_COLOR = '#2f5e48' // --color-accent
 const START_COLOR = '#10241b' // --color-text
@@ -17,7 +19,13 @@ interface CourseMapProps {
   type: CourseType
   /** 장소 마커를 누르면 불러요 (장소 카드 열기) */
   onPlaceClick?: (placeId: string) => void
+  /** 있으면 경로선을 안전 등급 색으로 그려요 (#11). fromIndex·toIndex는 path 위치예요 */
+  safetySegments?: Safety['segments'] | null
 }
+
+/** 안전 구간의 경로선 조각 (끝점은 다음 구간 시작점과 같아요) */
+const segmentPath = (path: PathPoint[], seg: Safety['segments'][number]) =>
+  path.slice(Math.max(seg.fromIndex, 0), Math.min(seg.toIndex, path.length - 1) + 1)
 
 const svgUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 
@@ -108,6 +116,7 @@ function TmapCanvas({
   onPlaceClick,
   onMapClick,
   onFailed,
+  safetySegments,
 }: CourseMapProps & { onMapClick?: () => void; onFailed: () => void }) {
   const mapId = `course-map-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   // 지도를 다시 그리지 않고 최신 함수를 부르도록 ref로 들고 있어요.
@@ -115,6 +124,46 @@ function TmapCanvas({
   useEffect(() => {
     handlers.current = { onPlaceClick, onMapClick, onFailed }
   })
+
+  // 구간 색을 켜고 끌 때 지도를 새로 만들지 않고 경로선만 바꿔요.
+  // T map은 이미 올린 선을 다시 setMap 하면 두 번 등록돼서 지도를 없앨 때 오류가 나요. routeShown으로 실제로 바뀔 때만 불러요.
+  const layers = useRef<{
+    T: TmapNamespace
+    map: TmapMap
+    route: TmapOverlay
+    routeShown: boolean
+    safety: TmapOverlay[]
+  } | null>(null)
+  const safetyRef = useRef(safetySegments)
+  useEffect(() => {
+    safetyRef.current = safetySegments
+    applySafety()
+    // 구간 정보가 바뀔 때만 다시 그려요 (추천 이유 조회 같은 다른 렌더링에는 그대로 둬요)
+  }, [safetySegments])
+  function applySafety() {
+    const l = layers.current
+    if (!l) return
+    l.safety.forEach((o) => o.setMap(null))
+    l.safety = []
+    const segments = safetyRef.current
+    const showSafety = !!segments && segments.length > 0
+    if (l.routeShown === showSafety) {
+      l.route.setMap(showSafety ? null : l.map)
+      l.routeShown = !showSafety
+    }
+    if (!showSafety) return
+    l.safety = segments
+      .map((seg) => segmentPath(path, seg))
+      .map((line, i) =>
+        new l.T.Polyline({
+          path: line.map(([lat, lng]) => new l.T.LatLng(lat, lng)),
+          strokeColor: safetyGradeColor(segments[i].grade),
+          strokeWeight: 6,
+          strokeOpacity: 0.95,
+          map: l.map,
+        }),
+      )
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -133,7 +182,9 @@ function TmapCanvas({
         })
         type Listenable = { addListener?: (event: string, fn: () => void) => void }
 
-        new T.Polyline({ path: path.map(toLatLng), strokeColor: ROUTE_COLOR, strokeWeight: 6, strokeOpacity: 0.9, map })
+        const route = new T.Polyline({ path: path.map(toLatLng), strokeColor: ROUTE_COLOR, strokeWeight: 6, strokeOpacity: 0.9, map })
+        layers.current = { T, map, route, routeShown: true, safety: [] }
+        applySafety()
         for (const arrow of directionArrows(path)) {
           new T.Marker({
             position: new T.LatLng(arrow.at.lat, arrow.at.lng),
@@ -185,8 +236,15 @@ function TmapCanvas({
       })
     return () => {
       cancelled = true
-      map?.destroy()
+      layers.current = null
+      // 화면을 떠날 때 SDK 정리 중 오류가 나도 앱 전체가 멈추지 않게 해요 (지도 영역은 어차피 사라져요).
+      try {
+        map?.destroy()
+      } catch (e) {
+        console.warn('T map 지도 정리 중 오류', e)
+      }
     }
+    // applySafety는 ref만 읽어서 코스가 바뀔 때만 다시 그려요
   }, [mapId, path, places, start, end, type])
 
   return <div id={mapId} className="course-map-canvas" role="img" aria-label="코스 지도" />
@@ -219,17 +277,33 @@ export function CourseMap(props: CourseMapProps) {
           <ExpandIcon />
         </button>
         {failed && <span className="course-map-note">지도를 불러오지 못해 코스 모양만 보여드려요</span>}
+        {props.safetySegments && props.safetySegments.length > 0 && <SafetyLegend segments={props.safetySegments} />}
       </div>
 
       {expanded && (
         <div className="course-map-full" role="dialog" aria-modal="true" aria-label="코스 지도 전체 화면">
           <div className={`course-map-full-body${failed ? ' course-map-sketch' : ''}`}>{content('full')}</div>
+          {props.safetySegments && props.safetySegments.length > 0 && <SafetyLegend segments={props.safetySegments} />}
           <button type="button" className="course-map-full-close" onClick={() => setExpanded(false)} aria-label="지도 닫기">
             ×
           </button>
         </div>
       )}
     </>
+  )
+}
+
+/** 지도 왼쪽 아래 등급 범례 (이 코스에 나온 등급만) */
+function SafetyLegend({ segments }: { segments: Safety['segments'] }) {
+  return (
+    <ul className="safety-legend" aria-label="안전 구간 색 설명">
+      {gradesInUse(segments).map((g) => (
+        <li key={g.grade}>
+          <span className="safety-legend-swatch" style={{ background: g.color }} aria-hidden="true" />
+          {g.label}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -242,7 +316,7 @@ function ExpandIcon() {
 }
 
 /** T map 없이 경로 모양만 그려요. 지도를 못 불러와도 코스 모양과 장소 순서는 볼 수 있어요. */
-function RouteSketch({ path, places, start, end, type }: Omit<CourseMapProps, 'onPlaceClick'>) {
+function RouteSketch({ path, places, start, end, type, safetySegments }: Omit<CourseMapProps, 'onPlaceClick'>) {
   const W = 360
   const H = 240
   const PAD = 28
@@ -264,7 +338,21 @@ function RouteSketch({ path, places, start, end, type }: Omit<CourseMapProps, 'o
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="코스 모양 (지도를 불러오지 못했어요)">
-      <polyline points={toPoints(path)} fill="none" stroke={ROUTE_COLOR} strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      {safetySegments && safetySegments.length > 0 ? (
+        safetySegments.map((seg, i) => (
+          <polyline
+            key={i}
+            points={toPoints(segmentPath(path, seg))}
+            fill="none"
+            stroke={safetyGradeColor(seg.grade)}
+            strokeWidth="5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        ))
+      ) : (
+        <polyline points={toPoints(path)} fill="none" stroke={ROUTE_COLOR} strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      )}
       {directionArrows(path).map((arrow, i) => {
         const [x, y] = xy(arrow.at)
         return (

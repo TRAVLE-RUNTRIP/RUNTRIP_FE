@@ -1,7 +1,7 @@
 // VITE_USE_MOCK일 때 client.ts가 fetch 대신 부르는 가짜 서버예요.
 // 상태는 메모리에만 있어서 새로고침하면 처음으로 돌아가요.
 import { distanceM } from '../../lib/geo'
-import { isRoughlyInSeoul } from '../../lib/seoul'
+import { isNightInSeoul, isRoughlyInSeoul } from '../../lib/seoul'
 import type {
   Course,
   CreateCourseRequest,
@@ -13,7 +13,16 @@ import type {
   RunSummary,
   SaveRunRequest,
 } from '../types'
-import { MOCK_LOCATIONS, MOCK_PASSWORD, MOCK_REASONS, MOCK_USER, buildMockCourse, generateMockCourse } from './data'
+import {
+  MOCK_LOCATIONS,
+  MOCK_PASSWORD,
+  MOCK_REASONS,
+  MOCK_USER,
+  buildMockCourse,
+  generateMockCourse,
+  noDataSafety,
+  safetyAt,
+} from './data'
 
 interface MockResponse {
   status: number
@@ -87,6 +96,13 @@ const MOCK_ERROR_BY_KM: Record<number, { status: number; code: ErrorCode; messag
 // 장소 카드(#6) 확인용: 이 목표 거리로 만든 코스는 추천 이유가 끝까지 PENDING이라 장소 개요로 대신해요.
 const MOCK_REASONS_PENDING_KM = 11
 
+// 안전 조언(#11) 확인용: 7km면 safety가 null("준비 중"), 9km면 보안등 자료가 없어 score가 null이에요.
+const MOCK_SAFETY_NULL_KM = 7
+const MOCK_SAFETY_NO_DATA_KM = 9
+
+/** 코스 생성·상세는 응답 시각의 시간대로 안전 지수를 줘요 (F-06, F-15). */
+const withSafetyNow = (course: Course): Course => ({ ...course, safety: safetyAt(course.safety, isNightInSeoul()) })
+
 export async function mockRequest(method: string, url: string, body: unknown): Promise<MockResponse> {
   const { pathname, searchParams } = new URL(url, window.location.origin)
   await sleep(method === 'POST' && pathname === '/api/courses' ? COURSE_LATENCY_MS : LATENCY_MS)
@@ -135,13 +151,19 @@ export async function mockRequest(method: string, url: string, body: unknown): P
     if (req.preferences.length === 0) return fail(400, 'VALIDATION_ERROR', '취향을 1개 이상 골라 주세요')
     const forced = MOCK_ERROR_BY_KM[req.targetKm]
     if (forced) return fail(forced.status, forced.code, forced.message)
-    const course = generateMockCourse(state.nextCourseId, req)
-    if (!course) return fail(422, 'NO_MORE_COURSES', '같은 조건으로 만들 수 있는 코스를 모두 보여드렸어요.')
+    const generated = generateMockCourse(state.nextCourseId, req)
+    if (!generated) return fail(422, 'NO_MORE_COURSES', '같은 조건으로 만들 수 있는 코스를 모두 보여드렸어요.')
+    const course: Course =
+      req.targetKm === MOCK_SAFETY_NULL_KM
+        ? { ...generated, safety: null }
+        : req.targetKm === MOCK_SAFETY_NO_DATA_KM
+          ? { ...generated, safety: noDataSafety(generated.path.length) }
+          : generated
     const courseId = state.nextCourseId++
     state.courses.set(courseId, course)
     state.reasonPolls.set(courseId, 0)
     if (req.targetKm === MOCK_REASONS_PENDING_KM) state.reasonsStuck.add(courseId)
-    return ok(course, 201)
+    return ok(withSafetyNow(course), 201)
   }
 
   // 8. 저장 코스 목록 (/api/courses/{id}보다 먼저 확인)
@@ -202,7 +224,7 @@ export async function mockRequest(method: string, url: string, body: unknown): P
     }
 
     // 9. 상세
-    if (method === 'GET' && !sub) return ok(course)
+    if (method === 'GET' && !sub) return ok(withSafetyNow(course))
   }
 
   // 11. 러닝 기록 저장 (같은 runId면 200으로 같은 내용)
